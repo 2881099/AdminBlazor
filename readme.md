@@ -37,7 +37,7 @@ AdminBlazor 是一款 Blazor SSR 后台管理项目，支持 RABC 权限菜单/�
 
 ![image](Images/01.png)
 
-## 5. 生成代码
+## 5. 生成代码，在实体类型维护注释、导航属性
 
 ![image](Images/02.png)
 

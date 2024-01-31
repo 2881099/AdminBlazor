@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "2881099",
+  "classifications": [ "Blazor", "Admin" ],
+  "identity": "AdminBlazor.Template",
+  "name": "AdminBlazor.Template",
+  "shortName": "admin",
+  "sourceName": "AdminBlazor.Template",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

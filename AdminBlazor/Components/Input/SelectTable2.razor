@@ -1,0 +1,87 @@
+﻿@namespace BootstrapBlazor.Components
+@using FreeSql.Internal.Model
+@typeparam TItem where TItem : class, new()
+@typeparam TKey
+
+<AdminTable2 TItem="TItem" PageSize="PageSize" Context="item"
+    IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsSingleSelect="ValueChanged.HasDelegate"
+    OnSelectChanged="OnSelectChanged" OnQuery="OnQuery">
+    <TableTh1>@TableTh1</TableTh1>
+    <TableTd1>@TableTd1(item)</TableTd1>
+</AdminTable2>
+
+@code {
+    [Parameter] public TKey Value { get; set; }
+    [Parameter] public EventCallback<TKey> ValueChanged { get; set; }
+    [Parameter] public List<TItem> Items { get; set; }
+    [Parameter] public EventCallback<List<TItem>> ItemsChanged { get; set; }
+
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public bool IsSearchText { get; set; } = true;
+
+    [Parameter] public RenderFragment? TableTh1 { get; set; }
+    [Parameter] public RenderFragment<TItem>? TableTd1 { get; set; }
+    [Parameter] public EventCallback<AdminQueryEventArgs<TItem>> OnQuery { get; set; }
+
+    TableInfo metaTItem;
+    TKey GetPrimaryValue(TItem item) => metaTItem.Primarys[0].GetValue(item).ConvertTo<TKey>();
+    protected override void OnInitialized()
+    {
+        metaTItem = fsql.CodeFirst.GetTableByEntity(typeof(TItem));
+        if (metaTItem.Primarys.Length != 1) throw new ArgumentException("SelectTable2 要求使用类型必须使用单一主键");
+        if (metaTItem.Primarys[0].CsType.NullableTypeOrThis() != typeof(TKey).NullableTypeOrThis()) throw new ArgumentException("SelectTable2 要求使用类型的主键，必须与 TKey 类型相同");
+    }
+
+    async protected override Task OnParametersSetAsync()
+    {
+        allItems.Clear();
+        if (Items != null)
+            foreach (var item in Items)
+                allItems[GetPrimaryValue(item)] = new AdminItem<TItem>(item) { Selected = true };
+        init = true;
+        if (currentItems != null) await OnSelectChanged(currentItems);
+    }
+    bool init;
+    List<AdminItem<TItem>> currentItems;
+    Dictionary<TKey, AdminItem<TItem>> allItems = new();
+    async Task OnSelectChanged(List<AdminItem<TItem>> e)
+    {
+        if (currentItems != e || init)
+        {
+            if (currentItems != e) currentItems = e;
+            init = false;
+            currentItems.ForEach(a =>
+            {
+                var pkval = GetPrimaryValue(a.Value);
+                if (ValueChanged.HasDelegate)
+                    a.Selected = object.Equals(Value, pkval);
+                else if (ItemsChanged.HasDelegate)
+                    a.Selected = allItems.TryGetValue(pkval, out var subi) && subi.Selected;
+                allItems[pkval] = a;
+            });
+            StateHasChanged();
+        }
+        await Finish();
+    }
+
+    async Task Finish()
+    {
+        if (ValueChanged.HasDelegate)
+        {
+            Value = GetPrimaryValue(allItems.Values.Where(a => a.Selected).FirstOrDefault()?.Value);
+            await ValueChanged.InvokeAsync(Value);
+        }
+        else if (ItemsChanged.HasDelegate)
+        {
+            var ischanged = false;
+            if (Items == null)
+            {
+                Items = new List<TItem>();
+                ischanged = true;
+            }
+            Items.Clear();
+            Items.AddRange(allItems.Values.Where(a => a.Selected).Select(a => a.Value));
+            if (ischanged) await ItemsChanged.InvokeAsync(Items);
+        }
+    }
+}

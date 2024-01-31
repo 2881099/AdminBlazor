@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<NoWarn>1701;1702;CS1573;CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8618;CS8619;CS8620;CS8622;CS8625;CS8629;CS8714;CS1591</NoWarn>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Authors>FreeSql;YeXiangQin</Authors>
+		<Description>AdminBlazor 是一款 Blazor 后台管理项目，支持 RABC 权限菜单/按钮，支持一对一、一对多、多对多代码生成 .razor 界面。</Description>
+		<PackageProjectUrl>https://github.com/2881099/AdminBlazor</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/2881099/AdminBlazor</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>Blazor;Admin;RABC;Generator</PackageTags>
+		<Version>1.0.5</Version>
+		<PackageReadmeFile>readme.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="../readme.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="BootstrapBlazor" Version="8.1.7" />
+		<PackageReference Include="BootstrapBlazor.FontAwesome" Version="8.0.1" />
+		<PackageReference Include="FreeScheduler" Version="2.0.28" />
+		<PackageReference Include="FreeSql.Extensions.AggregateRoot" Version="3.2.811" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
+		<PackageReference Include="NCrontab" Version="3.3.3" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Rougamo.Fody" Version="2.2.0" />
+		<PackageReference Include="Yitter.IdGenerator" Version="1.0.14" />
+	</ItemGroup>
+
+</Project>

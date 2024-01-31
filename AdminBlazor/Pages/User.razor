@@ -1,0 +1,108 @@
+@page "/Admin/User"
+
+<PageTitle>用户管理</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <AdminTable2 TItem="UserEntity" Context="item" PageSize="20" TableTd99Width="230"
+                
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+                <TableHeader>
+                    <th>名称</th>
+                    <th>昵称</th>
+                    <th>登陆时间</th>
+                    <th>创建时间</th>
+                    <th>角色</th>
+                    <th>年龄</th>
+                    <th>籍贯</th>
+                </TableHeader>
+                <TableRow>
+                    <td>@item.Username</td>
+                    <td>@item.Nickname</td>
+                    <td>@item.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@string.Join(", ", item.Roles.Select(a => a.Name))</td>
+                    <td>@item.UserExt?.Age</td>
+                    <td>@item.UserExt?.Whois</td>
+                </TableRow>
+                <TableTd99>
+                    <button @onclick="e => BeginAllocRoles(item)" type="button" class="mr-2 btn btn-light btn-xs"><i class="fa fa-user-secret"></i>分配角色</button>
+                </TableTd99>
+                <EditTemplate>
+                    <div class="row">
+                        <div class="form-group col-6">
+                            <label class="form-label">名称</label>
+                            <input @bind="item.Username" type="text" class="form-control" placeholder="" maxlength="255">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">昵称</label>
+                            <input @bind="item.Nickname" type="text" class="form-control" placeholder="" maxlength="255">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">密码</label>
+                            <input @bind="item.Password" type="text" class="form-control" placeholder="" maxlength="255">
+                        </div>
+                        <div class="form-group col-12">
+                            <blockquote class="quote-info m-0 p-0 mt-2 pl-2"><h5>用户扩展</h5></blockquote>
+                        </div>
+                        @if (item.UserExt != null)
+                        {
+                            <div class="form-group col-6">
+                                <label class="form-label">年龄</label>
+                                <input @bind="item.UserExt.Age" type="number" class="form-control" placeholder="">
+                            </div>
+                            <div class="form-group col-6">
+                                <label class="form-label">籍贯</label>
+                                <input @bind="item.UserExt.Whois" type="text" class="form-control" placeholder="" maxlength="255">
+                            </div>
+                        }
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+<AllocTable2 TItem="UserEntity" TChild="RoleEntity" @bind-Item="@allocItemRoles" ChildProperty="Roles" Title="@($"【分配角色】{allocItemRoles?.Username}")">
+    <TableTd1>@context.Name</TableTd1>
+</AllocTable2>
+
+@code {
+
+    [Inject] IAggregateRootRepository<UserEntity> repository { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        var allRoleEntities = await fsql.Select<RoleEntity>().ToListAsync();
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("角色", "Roles", true, 12, 
+                string.Join(",", allRoleEntities.Select(a => a.Name)),
+                string.Join(",", allRoleEntities.Select(a => a.Id))),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<UserEntity> e)
+    {
+        e.Select.IncludeMany(a => a.Roles)
+            .WhereIf(e.Filters[0].HasValue, a => a.Roles.Any(b => e.Filters[0].Values<long>().Contains(b.Id)))
+            .Include(a => a.UserExt)
+            .WhereIf(!e.SearchText.IsNull(), a => a.UserExt.Whois.Contains(e.SearchText));
+    }
+
+    async Task OnEdit(UserEntity item)
+    {
+        if (item.UserExt == null) item.UserExt = new();
+        await Task.Yield();
+    }
+    UserEntity allocItemRoles;
+    [AdminButton("alloc_roles")]
+    async Task BeginAllocRoles(UserEntity item)
+    {
+        allocItemRoles = item;
+        await Task.Yield();
+    }
+}

@@ -1,0 +1,49 @@
+﻿@namespace BootstrapBlazor.Components
+@typeparam TItem
+@typeparam TKey
+@using FreeSql.Internal.Model
+
+<select @oninput="OnInput" @bind="@Value" class="form-control" disabled="@Disabled">
+    @if (items != null)
+    {
+        foreach (var t in items)
+        {
+            <option value="@GetPrimaryValue(t.Value)">@(t.Level > 1 ? "".PadRight((t.Level - 1) * 1, '　') : "")@(DisplayText?.Invoke(t.Value) ?? firstStringColumn?.GetValue(t.Value) ?? GetPrimaryValue(t.Value))</option>
+        }
+    }
+</select>
+
+@code {
+    List<AdminItem<TItem>> items;
+    ColumnInfo firstStringColumn;
+    [Parameter] public TKey Value { get; set; }
+    [Parameter] public Func<TItem, string> DisplayText { get; set; }
+    [Parameter] public EventCallback<TKey> ValueChanged { get; set; }
+    [Parameter] public EventCallback<TKey> OnValueChanged { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    TableInfo metaTItem;
+    object GetPrimaryValue(TItem item) => metaTItem.Primarys[0].GetValue(item);
+    protected override void OnInitialized()
+    {
+        metaTItem = fsql.CodeFirst.GetTableByEntity(typeof(TItem));
+        if (metaTItem.Primarys.Length != 1) throw new ArgumentException("SelectEntity 要求使用类型必须使用单一主键");
+        if (metaTItem.Primarys[0].CsType.NullableTypeOrThis() != typeof(TKey).NullableTypeOrThis()) throw new ArgumentException("SelectEntity 要求使用类型的主键，必须与 TKey 类型相同");
+    }
+
+    async Task OnInput(ChangeEventArgs e)
+    {
+        var val = e.Value.ConvertTo<TKey>();
+        await OnValueChanged.InvokeAsync(val);
+        await ValueChanged.InvokeAsync(val);
+    }
+
+    async protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        firstStringColumn = fsql.CodeFirst.GetTableByEntity(typeof(TItem)).ColumnsByPosition.FirstOrDefault(a => a.CsType == typeof(string));
+        var objs = await fsql.Select<object>().AsType(typeof(TItem)).ToListAsync();
+        items = objs.Select(a => (TItem)a).ToList().ToAdminItemList(fsql);
+        StateHasChanged();
+    }
+}

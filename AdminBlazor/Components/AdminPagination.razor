@@ -1,0 +1,81 @@
+﻿@namespace BootstrapBlazor.Components
+
+<div class="btn-group btn-group-sm">
+    @if (q.MaxPageNumber > 0 && q.PageNumber > 1)
+    {
+        <span class="btn btn-light" @onclick="PageClick(1)">首页</span>
+        <span class="btn btn-light" @onclick="PageClick(q.PageNumber - 1)">上页</span>
+    }
+
+    @if (_forStart > 1)
+    {
+        <span class="btn btn-light">..</span>
+    }
+    @for(var index = _forStart; index <= _forEnd; index++)
+    {
+        <span class="btn btn-@(index == q.PageNumber ? "primary" : "light")" @onclick="PageClick(index)">@index</span>
+    }
+
+    @if (_forEnd < q.MaxPageNumber)
+    {
+        <span class="btn btn-light">..</span>
+    }
+    @if (q.PageNumber < q.MaxPageNumber)
+    {
+        <span class="btn btn-light" @onclick="PageClick(q.PageNumber + 1)">下页</span>
+        <span class="btn btn-light" @onclick="PageClick(q.MaxPageNumber)">尾页</span>
+    }
+    <span class="btn btn-light">
+        页数：@if (q.MaxPageNumber >= 10) {<input type="number" @bind="@_page" @onkeyup="KeyHandler" @onkeyup:preventDefault style="font-size:12px;margin:0;padding:0;width:60px;height:20px;" />}
+        else { @q.PageNumber}/@q.MaxPageNumber
+        每页：@q.PageSize
+        总计：@q.Total
+    </span>
+</div>
+
+@code {
+
+    [Parameter]
+    public AdminQueryInfo AdminQuery { get; set; }
+    AdminQueryInfo q => AdminQuery;
+
+    int _page;
+    int _forStart => Math.Max(1, q.PageNumber - 5);
+    int _forEnd => Math.Min(q.PageNumber + 5, q.MaxPageNumber);
+    protected override void OnInitialized()
+    {
+        if (q.IsQueryString)
+        {
+            _page = nav.GetQueryStringValue(q.PageNumberQueryStringName).ConvertTo<int>();
+            q.PageNumber = _page;
+        }
+    }
+
+    async Task KeyHandler(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            q.PageNumber = _page;
+            await NavigateToQuery();
+        }
+    }
+
+    EventCallback PageClick(int pageNumber)
+    {
+        return EventCallback.Factory.Create(this, async () =>
+        {
+            q.PageNumber = pageNumber;
+            await NavigateToQuery();
+        });
+    }
+    async Task NavigateToQuery()
+    {
+        if (q.IsQueryString)
+        {
+            var url = nav.GetUriWithQueryParameter(q.PageNumberQueryStringName, q.PageNumber);
+            nav.NavigateTo(url);
+        }
+        if (q.InvokeQueryAsync != null)
+            await q.InvokeQueryAsync();
+    }
+}

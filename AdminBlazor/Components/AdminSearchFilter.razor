@@ -1,0 +1,91 @@
+﻿@namespace BootstrapBlazor.Components
+
+<div class="row">
+    @for (var a = 0; a < Filters?.Length; a++)
+    {
+        if (Filters[a].Options.Any())
+        {
+            var localA = a;
+            <div class="col-@Filters[a].Col">
+                <div class="row mb-2">
+                    <div style="float:left;width:75px" class="sm">@Filters[a].Label</div>
+                    <div class="col-auto">
+                        <span @onclick="e => ButtonClick(localA, -1)" class="btn @(Filters[a].Options.Any(b => b.Selected) == false ? "btn-primary" : "btn-light") btn-xs pl-2 pr-2">默认</span>
+                        @for (var b = 0; b < Filters[a].Options.Length; b++)
+                        {
+                            var localB = b;
+                            <span @onclick="e => ButtonClick(localA, localB)" class="btn @(Filters[a].Options[b].Selected ? "btn-primary " : "btn-light") btn-xs ml-2 pl-2 pr-2">@Filters[a].Options[b].Value.Key</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+
+    [Parameter]
+    public AdminQueryInfo AdminQuery { get; set; }
+    AdminQueryInfo q => AdminQuery;
+    AdminFilterInfo[] Filters => q.Filters;
+
+    protected override void OnInitialized()
+    {
+        if (q.IsQueryString)
+        {
+            foreach (var filter in Filters)
+            {
+                var query = nav.GetQueryStringValues(filter.QueryStringName);
+                foreach (var qval in query)
+                {
+                    for (var x = 0; x < filter.Options.Length; x++)
+                        if (filter.Options[x].Value.Value == qval)
+                            filter.Options[x].Selected = true;
+                }
+            }
+        }
+    }
+
+    async Task ButtonClick(int a, int b)
+    {
+        if (b < 0 || Filters[a].Multiple == false)
+        {
+            foreach (var btn in Filters[a].Options)
+            {
+                if (b >= 0 && Filters[a].Options[b] == btn) continue;
+                btn.Selected = false;
+            }
+        }
+        if (b >= 0)
+        {
+            Filters[a].Options[b].Selected = !Filters[a].Options[b].Selected;
+            // if (Filters[a].Multiple && Filters[a].Options.All(b => b.Selected))
+            // {
+            //     foreach (var btn in Filters[a].Options)
+            //         btn.Selected = false;
+            // }
+        }
+
+        if (q.IsQueryString)
+        {
+            var dict = new Dictionary<string, object>();
+            dict[q.PageNumberQueryStringName] = null;
+
+            foreach (var filter in Filters)
+            {
+                var vals = new List<string>();
+                for (var x = 0; x < filter.Options.Length; x++)
+                    if (filter.Options[x].Selected)
+                        vals.Add(filter.Options[x].Value.Value);
+                if (vals.Any() == false) dict[filter.QueryStringName] = null;
+                dict[filter.QueryStringName] = vals.ToArray();
+            }
+            var url = nav.GetUriWithQueryParameters(dict);
+            nav.NavigateTo(url);
+        }
+        q.PageNumber = 1;
+        if (q.InvokeQueryAsync != null)
+            await q.InvokeQueryAsync();
+    }
+}

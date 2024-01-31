@@ -1,0 +1,602 @@
+﻿@namespace BootstrapBlazor.Components
+@typeparam TItem where TItem : class, new()
+@using FreeSql.Extensions.EntityUtil
+@using FreeSql.Internal.Model
+@using System.Collections
+
+@{
+    var selectedCount = items.Where(a => a.Selected).Count();
+    var is1r4c = TableTd1 != null && TableRow == null && TableHeader == null && IsEdit == false && IsRemove == false;
+}
+<div class="card @(is1r4c ? "" : "card-info ")card-outline">
+    @if (q.Filters.Any() == true)
+    {
+        <div class="card-header d-block">
+            <AdminSearchFilter AdminQuery="q" />
+        </div>
+    }
+    @if (IsRemove || IsEdit && IsSingleSelect || IsAdd || CardHeader != null || IsSearchText)
+    {
+        <div class="card-header d-block">
+            @if (IsRemove && (IsMultiSelect || IsSingleSelect))
+            {
+                if (selectedCount > 0)
+                {
+                    <button @onclick="e => Delete()" type="button" class="mr-2 btn btn-light btn-sm"><i class="far fa-trash-alt"></i></button>
+                }
+                else
+                {
+                    <button type="button" class="mr-2 btn btn-light btn-sm disabled"><i class="far fa-trash-alt"></i></button>
+                }
+            }
+            @if (IsEdit && IsSingleSelect)
+            {
+                if (selectedCount > 0)
+                {
+                    <button @onclick="e => BeginEdit(items.FirstOrDefault(a => a.Selected)?.Value)" type="button" class="mr-2 btn btn-light btn-sm"><i class="far fa-edit"></i></button>
+                }
+                else
+                {
+                    <button type="button" class="mr-2 btn btn-light btn-sm disabled"><i class="far fa-edit"></i></button>
+                }
+            }
+            @if (IsAdd)
+            {
+                <button @onclick="BeginAdd" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-plus"></i> 添加</button>
+            }
+            @if (IsRefersh)
+            {
+                <button @onclick="e => Refersh()" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
+            }
+
+            @CardHeader
+
+            <div class="float-end">
+                @if (IsSearchText)
+                {
+                    <AdminSearchText AdminQuery="q" />
+                }
+            </div>
+        </div>
+
+    }
+    <div class="card-body p-0" style="border:none;@(BodyHeight > 0 ? $"height:{BodyHeight}px;margin-top:0.5rem;overflow:auto;" : "")">
+        <div class="@(is1r4c ? "" : "table-responsive ")">
+            <table class="table @(is1r4c && treeNav.Key.IsNull() ? "" : "table-hover ")table-bordered table-sm m-0">
+                <thead style="@(is1r4c ? "display:none " : "")">
+                    <tr>
+                        @if (IsSingleSelect || IsMultiSelect)
+                        {
+                            <th style="@(TableTd1 == null && TableTh1 == null ? "width:60px;" : "")" colspan="@(is1r4c ? Colspan : 1)">
+                                @if (IsSingleSelect == false)
+                                {
+                                    <span class="icheck-primary sm"><input @onchange="e => CheckboxOnChange(null, e.Value.ConvertTo<bool>())" type="checkbox"></span>
+                                }
+                                else
+                                {
+                                    <span>&nbsp;</span>
+                                }
+                                @if (TableTh1 != null)
+                                {
+                                    <span class="mr-2"></span>
+                                    @TableTh1
+                                }
+                            </th>
+                        }
+                        @TableHeader
+                        @if (TableTd99 != null || IsEdit || IsRemove)
+                        {
+                            <th width="@TableTd99Width">&nbsp;</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (is1r4c)
+                    {
+                        if (treeNav.Key.IsNull())
+                        {
+                            @* 一行四列 *@
+                            for (var x = 0; x < items.Count; x += Colspan)
+                            {
+                                <tr>
+                                    @for (var y = 0; y < Colspan; y++)
+                                    {
+                                        var opt = x + y < items.Count ? items[x + y] : null;
+                                        <td width="@(100/Colspan)%" class="pl-3">
+                                            @if (opt != null)
+                                            {
+                                                if (IsSingleSelect || IsMultiSelect)
+                                                {
+                                                    if (IsSingleSelect == false)
+                                                    {
+                                                        <span class="icheck-primary sm"><input checked="@opt.Selected" @oninput="e => CheckboxOnChange(opt, e.Value.ConvertTo<bool>())" type="checkbox" id="@(tempid + "selectRadio_" + GetItemPrimaryValue(opt.Value))" /></span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="icheck-primary sm"><input checked="@opt.Selected" @oninput="e => CheckboxOnChange(opt, e.Value.ConvertTo<bool>())" type="radio" name="@(tempid + "_selectRadio")" id="@(tempid + "selectRadio_" + GetItemPrimaryValue(opt.Value))" /></span>
+                                                    }
+                                                }
+                                                <label for="@(tempid + "selectRadio_" + GetItemPrimaryValue(opt.Value))" class="form-check-label pl-2">@TableTd1(opt.Value)</label>
+                                            }
+                                            else
+                                            {
+                                                <span>&nbsp;</span>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            for (var x = 0; x < items.Count; x++)
+                            {
+                                var opt = items[x];
+                                var ischild = x + 1 < items.Count ? items[x + 1].Level > opt.Level : false;
+                                <tr>
+                                    <td style="@(opt.Level > 1 ? $"padding-left:{opt.Level * 1.53}rem" : "")" @onclick="e => RowClick(opt)">
+                                        @if (opt != null)
+                                        {
+                                            if (IsSingleSelect || IsMultiSelect)
+                                            {
+                                                if (IsSingleSelect == false)
+                                                {
+                                                    <span class="icheck-primary sm"><input checked="@opt.Selected" @oninput="e => CheckboxOnChange(opt, e.Value.ConvertTo<bool>())" type="checkbox" id="@(tempid + "selectRadio_" + GetItemPrimaryValue(opt.Value))" /></span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="icheck-primary sm"><input checked="@opt.Selected" @oninput="e => CheckboxOnChange(opt, e.Value.ConvertTo<bool>())" type="radio" name="@(tempid + "_selectRadio")" id="@(tempid + "selectRadio_" + GetItemPrimaryValue(opt.Value))" /></span>
+                                                }
+                                            }
+                                            <label for="@(tempid + "selectRadio_" + GetItemPrimaryValue(opt.Value))" class="form-check-label pl-2">@TableTd1(opt.Value)</label>
+                                        }
+                                        else
+                                        {
+                                            <span>&nbsp;</span>
+                                        }
+                                    </td>
+                                </tr>
+                                var childInRows = 0;
+                                for (var y = x + 1; y < items.Count; y++)
+                                {
+                                    if (items[y].Level == opt.Level + 1) 
+                                    {
+                                        childInRows = y;
+                                        continue;
+                                    }
+                                    if (items[y].Level > opt.Level + 1)
+                                    {
+                                        childInRows = 0;
+                                        break;
+                                    }
+                                    break;
+                                }
+                                if (x < childInRows)
+                                {
+                                    <tr>
+                                        <td style="padding-left:@(items[x + 1].Level * 1.53)rem">
+                                            @for (var y = x + 1; y <= childInRows; y++)
+                                            {
+                                                var opt2 = items[y];
+                                                if (IsSingleSelect || IsMultiSelect)
+                                                {
+                                                    if (IsSingleSelect == false)
+                                                    {
+                                                        <span class="icheck-primary sm"><input checked="@opt2.Selected" @oninput="e => CheckboxOnChange(opt2, e.Value.ConvertTo<bool>())" type="checkbox" id="@(tempid + "selectRadio_" + GetItemPrimaryValue(opt2.Value))" /></span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="icheck-primary sm"><input checked="@opt2.Selected" @oninput="e => CheckboxOnChange(opt2, e.Value.ConvertTo<bool>())" type="radio" name="@(tempid + "_selectRadio")" id="@(tempid + "selectRadio_" + GetItemPrimaryValue(opt2.Value))" /></span>
+                                                    }
+                                                }
+                                                <label for="@(tempid + "selectRadio_" + GetItemPrimaryValue(opt2.Value))" class="form-check-label pl-2 mr-4">@TableTd1(opt2.Value)</label>
+                                            }
+                                        </td>
+                                    </tr>
+                                    x = childInRows;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (var x = 0; x < items.Count; x++)
+                        {
+                            var opt = items[x];
+                            if (OnSelectChanged.HasDelegate || OnRowClick.HasDelegate)
+                            {
+                                <tr @onclick="e => RowClick(opt)" class="@opt.RowClass">
+                                    @if (IsSingleSelect || IsMultiSelect)
+                                    {
+                                        <td style="@(opt.Level > 1 ? $"padding-left:{opt.Level * 1.53}rem" : "")">
+                                            @if (IsSingleSelect == false)
+                                            {
+                                                <span class="icheck-primary sm"><input checked="@opt.Selected" @oninput="e => CheckboxOnChange(opt, e.Value.ConvertTo<bool>())" type="checkbox" /></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="icheck-primary sm"><input checked="@opt.Selected" @oninput="e => CheckboxOnChange(opt, e.Value.ConvertTo<bool>())" type="radio" name="@(tempid + "_selectRadio")" /></span>
+                                            }
+                                            @if (TableTd1 != null)
+                                            {
+                                                <span class="mr-2"></span>
+                                                @TableTd1(opt.Value)
+                                            }
+                                        </td>
+                                    }
+                                    @if (TableRow != null)
+                                    {
+                                        @TableRow(opt.Value)
+                                    }
+                                    @if (TableTd99 != null || IsEdit || IsRemove)
+                                    {
+                                        <td @onclick:stopPropagation="true">
+                                            @if (TableTd99 != null)
+                                            {
+                                                @TableTd99(opt.Value)
+                                            }
+                                            @if (IsEdit)
+                                            {
+                                                <button @onclick="e => BeginEdit(opt?.Value)" type="button" class="mr-2 btn btn-light btn-xs"><i class="fa fa-edit"></i>编辑</button>
+                                            }
+
+                                            @if (IsRemove && IsRowRemove)
+                                            {
+                                                <button @onclick="e => Delete(opt.Value)" type="button" class="btn btn-light btn-xs"><i class="far fa-trash-alt"></i>删除</button>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                            else
+                            {
+                                <tr>
+                                    @if (IsSingleSelect || IsMultiSelect)
+                                    {
+                                        <td style="@(opt.Level > 1 ? $"padding-left:{opt.Level * 1.53}rem" : "")">
+                                            @if (IsSingleSelect == false)
+                                            {
+                                                <span class="icheck-primary sm"><input checked="@opt.Selected" @oninput="e => CheckboxOnChange(opt, e.Value.ConvertTo<bool>())" type="checkbox" /></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="icheck-primary sm"><input checked="@opt.Selected" @oninput="e => CheckboxOnChange(opt, e.Value.ConvertTo<bool>())" type="radio" name="@(tempid + "_selectRadio")" /></span>
+                                            }
+                                            @if (TableTd1 != null)
+                                            {
+                                                <span class="mr-2"></span>
+                                                @TableTd1(opt.Value)
+                                            }
+                                        </td>
+                                    }
+                                    @if (TableRow != null)
+                                    {
+                                        @TableRow(opt.Value)
+                                    }
+                                    @if (TableTd99 != null || IsEdit || IsRemove)
+                                    {
+                                        <td @onclick:stopPropagation="true">
+                                            @if (TableTd99 != null)
+                                            {
+                                                @TableTd99(opt.Value)
+                                            }
+                                            @if (IsEdit)
+                                            {
+                                                <button @onclick="e => BeginEdit(opt?.Value)" type="button" class="mr-2 btn btn-light btn-xs"><i class="fa fa-edit"></i>编辑</button>
+                                            }
+
+                                            @if (IsRemove && IsRowRemove)
+                                            {
+                                                <button @onclick="e => Delete(opt.Value)" type="button" class="btn btn-light btn-xs"><i class="far fa-trash-alt"></i>删除</button>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @if (q.PageSize > 0 || CardFooter != null)
+    {
+        <div class="card-footer">
+            @if (q.PageSize > 0)
+            {
+                <AdminPagination AdminQuery="q" />
+            }
+
+            @CardFooter
+
+            @* @if (OnSelected.HasDelegate)
+            {
+                <div class="float-right">
+                    @if (selectedCount > 0)
+                    {
+        <button @onclick="e => { _selectedSingleValue = 0; items.ForEach(a => a.Selected = false); }" type="button" class="ml-2 btn btn-light"><i class="far fa-square"></i> 重置</button>
+                        <button @onclick="SelectFinish" type="button" class="ml-2 btn btn-success"><i class="fas fa-plus"></i> 确认选择 @selectedCount 项</button>
+                    }
+                    else
+                    {
+        <button type="button" class="ml-2 btn btn-light disabled"><i class="far fa-square"></i> 重置</button>
+                        <button type="button" class="ml-2 btn btn-success disabled"><i class="fas fa-plus"></i> 确认选择 @selectedCount 项</button>
+                    }
+                </div>
+            } *@
+        </div>
+    }
+</div>
+
+@if (IsAdd || IsEdit)
+{
+    <AdminModal Visible="item != null" OnClose="e => item = null" OnYes="Save" DialogClassName="@DialogClassName" Title="@(itemIsEdit ? $"【编辑】{Title}" : $"【添加】{Title}")">
+        @if (EditTemplate != null)
+        {
+            if (item != null)
+            {
+                @EditTemplate(item)
+            }
+        }
+        else
+        {
+            <span>请设置 &lt;EditTemplate&gt; 编辑内容</span>
+        }
+    </AdminModal>
+}
+
+@if (IsDebug)
+{
+    <input type="checkbox" @bind="q.IsQueryString" id="check_IsQueryString" /><label for="check_IsQueryString" class="form-check-label">IsQueryString</label>
+    <input type="checkbox" @bind="IsRemove" id="check_IsRemove" /><label for="check_IsRemove" class="form-check-label">IsRemove</label>
+    <input type="checkbox" @bind="IsAdd" id="check_IsAdd" /><label for="check_IsAdd" class="form-check-label">IsAdd</label>
+    <input type="checkbox" @bind="IsEdit" id="check_IsEdit" /><label for="check_IsEdit" class="form-check-label">IsEdit</label>
+    <input type="checkbox" @bind="IsSearchText" id="check_IsSearchText" /><label for="check_IsSearchText" class="form-check-label">IsSearchText</label>
+    <input type="checkbox" @bind="IsSingleSelect" id="check_IsSingleSelect" /><label for="check_IsSingleSelect" class="form-check-label">IsSingleSelect</label>
+    <input type="checkbox" @bind="IsConfirmEdit" id="check_IsConfirmEdit" /><label for="check_IsConfirmEdit" class="form-check-label">IsConfirmEdit</label>
+    <input type="checkbox" @bind="IsConfirmRemove" id="check_IsConfirmRemove" /><label for="check_IsConfirmRemove" class="form-check-label">IsConfirmRemove</label>
+}
+
+@code {
+    [Inject] IAggregateRootRepository<TItem> repository { get; set; }
+
+    [Parameter] public bool IsDebug { get; set; }
+    [Parameter] public string Title { get; set; }
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public bool IsQueryString { get; set; } = true;
+    [Parameter] public bool IsRemove { get; set; } = true;
+    [Parameter] public bool IsRowRemove { get; set; } = true;
+    [Parameter] public bool IsAdd { get; set; } = true;
+    [Parameter] public bool IsEdit { get; set; } = true;
+    [Parameter] public bool IsRefersh { get; set; } = true;
+    [Parameter] public bool IsSearchText { get; set; } = true;
+    [Parameter] public bool IsSingleSelect { get; set; } = false;
+    [Parameter] public bool IsMultiSelect { get; set; } = true;
+    [Parameter] public bool IsConfirmEdit { get; set; } = true;
+    [Parameter] public bool IsConfirmRemove { get; set; } = true;
+    [Parameter] public int Colspan { get; set; } = 4;
+    [Parameter] public int BodyHeight { get; set; } = -1;
+    [Parameter] public string DialogClassName { get; set; }
+
+    [Parameter] public RenderFragment? TableHeader { get; set; }
+    [Parameter] public RenderFragment<TItem>? TableRow { get; set; }
+    [Parameter] public RenderFragment? TableTh1 { get; set; }
+    [Parameter] public RenderFragment<TItem>? TableTd1 { get; set; }
+    [Parameter] public int TableTd99Width { get; set; } = 160;
+    [Parameter] public RenderFragment<TItem>? TableTd99 { get; set; }
+    [Parameter] public RenderFragment<TItem>? EditTemplate { get; set; }
+    [Parameter] public RenderFragment? CardHeader { get; set; }
+    [Parameter] public RenderFragment? CardFooter { get; set; }
+    [Parameter] public Func<AdminQueryInfo, Task> InitQuery { get; set; }
+    [Parameter] public EventCallback<AdminQueryEventArgs<TItem>> OnQuery { get; set; }
+    [Parameter] public EventCallback<TItem> OnEdit { get; set; }
+    [Parameter] public EventCallback<List<TItem>> OnRemove { get; set; }
+    [Parameter] public EventCallback<List<AdminItem<TItem>>> OnSelectChanged { get; set; }
+    [Parameter] public EventCallback<AdminItem<TItem>> OnRowClick { get; set; }
+
+    AdminQueryInfo q = new();
+    TItem item;
+    bool itemIsEdit = false;
+    List<AdminItem<TItem>> items = new();
+    string tempid;
+    TableInfo metaTItem;
+    object GetItemPrimaryValue(TItem item) => metaTItem.Primarys[0].GetValue(item);
+    KeyValuePair<string, TableRef> treeNav;
+    protected override void OnInitialized()
+    {
+        tempid = $"AdminTable2_{Guid.NewGuid().ToString("n")}";
+        metaTItem = fsql.CodeFirst.GetTableByEntity(typeof(TItem));
+        if (metaTItem.Primarys.Length != 1) throw new ArgumentException("AdminTable2 要求使用类型必须使用单一主键");
+        if (Title.IsNull()) Title = metaTItem.Comment;
+        q.PageSize = PageSize;
+        q.IsQueryString = IsQueryString;
+        q.Filters = new AdminFilterInfo[0];
+        treeNav = metaTItem.GetAllTableRef().Where(a => a.Value.Exception == null &&
+            a.Value.RefType == TableRefType.OneToMany &&
+            a.Value.RefEntityType == typeof(TItem) &&
+            a.Value.Columns.Count == 1 &&
+            a.Value.Columns[0].Attribute.IsPrimary &&
+            a.Value.RefColumns.Count == 1).FirstOrDefault();
+        if (treeNav.Key.IsNull() == false) q.PageSize = -1;
+    }
+
+    async protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        if (InitQuery != null)
+        {
+            await InitQuery(q);
+            if (q.IsQueryString)
+            {
+                foreach (var filter in q.Filters)
+                {
+                    var query = nav.GetQueryStringValues(filter.QueryStringName);
+                    foreach (var qval in query)
+                    {
+                        for (var x = 0; x < filter.Options.Length; x++)
+                            if (filter.Options[x].Value.Value == qval)
+                                filter.Options[x].Selected = true;
+                    }
+                }
+            }
+        }
+        q.InvokeQueryAsync = this.Load;
+        await q.InvokeQueryAsync();
+    }
+
+    async Task Load()
+    {
+        var select = repository.Select;
+        if (OnQuery.HasDelegate) await OnQuery.InvokeAsync(new AdminQueryEventArgs<TItem>(select, q.SearchText, q.Filters));
+        if (!IsEdit) select.NoTracking(); //多层弹框可能造成 OnEdit 级联加载内容失效
+        if (q.PageSize > 0) 
+        {
+            q.Total = await select.CountAsync();
+            select.Page(q.PageNumber, q.PageSize);
+        }
+        var list = await select.ToListAsync();
+        if (q.PageSize <= 0)
+        {
+            q.Total = list.Count;
+        }
+        items.Clear();
+        items = list.ToAdminItemList(fsql);
+        if (OnSelectChanged.HasDelegate) await OnSelectChanged.InvokeAsync(items);
+        StateHasChanged();
+    }
+
+    [AdminButton("AdminTable2_Refersh")]
+    Task Refersh() => Load();
+    [AdminButton("remove")]
+    async Task Delete(TItem item = null)
+    {
+        var list = item != null ? new List<TItem> { item } : items.Where(a => a.Selected).Select(a => a.Value).ToList();
+        if (list.Any() == false) return;
+        if (IsConfirmRemove && await JS.Confirm($"确定要删除 {list.Count}行 记录吗？", "删除之后无法恢复！") == false) return;
+        if (OnRemove.HasDelegate) await OnRemove.InvokeAsync(list);
+        q.Total -= await repository.DeleteAsync(list);
+        await Load();
+    }
+    [AdminButton("add")]
+    async Task BeginAdd()
+    {
+        item = new();
+        itemIsEdit = false;
+        if (OnEdit.HasDelegate) await OnEdit.InvokeAsync(item);
+    }
+    [AdminButton("edit")]
+    async Task BeginEdit(TItem editItem)
+    {
+        item = new();
+
+        AggregateRootUtils.MapEntityValue(null, fsql, typeof(TItem), editItem, item); //注意：此方法只处理 OneToOne/OneToMany 属性
+        foreach (var nav in fsql.CodeFirst.GetTableByEntity(typeof(TItem)).GetAllTableRef()
+            .Where(a => a.Value.Exception == null && a.Value.RefType == TableRefType.ManyToOne))
+            EntityUtilExtensions.SetEntityValueWithPropertyName(fsql, typeof(TItem), item, nav.Key,
+                EntityUtilExtensions.GetEntityValueWithPropertyName(fsql, typeof(TItem), editItem, nav.Key));
+
+        foreach (var nav in fsql.CodeFirst.GetTableByEntity(typeof(TItem)).GetAllTableRef()
+            .Where(a => a.Value.Exception == null && a.Value.RefType == TableRefType.OneToOne)) //1对1 同时编辑
+        {
+            var fromObj = EntityUtilExtensions.GetEntityValueWithPropertyName(fsql, typeof(TItem), editItem, nav.Key);
+            if (fromObj == null) continue;
+            var toObj = EntityUtilExtensions.GetEntityValueWithPropertyName(fsql, typeof(TItem), item, nav.Key);
+            foreach (var nav2 in fsql.CodeFirst.GetTableByEntity(nav.Value.RefEntityType).GetAllTableRef()
+                .Where(a => a.Value.Exception == null && a.Value.RefType == TableRefType.ManyToOne))
+                EntityUtilExtensions.SetEntityValueWithPropertyName(fsql, nav.Value.RefEntityType, toObj, nav2.Key,
+                    EntityUtilExtensions.GetEntityValueWithPropertyName(fsql, nav.Value.RefEntityType, fromObj, nav2.Key));
+        }
+
+        foreach (var nav in fsql.CodeFirst.GetTableByEntity(typeof(TItem)).GetAllTableRef()
+            .Where(a => a.Value.Exception == null && a.Value.RefType == TableRefType.OneToMany)) //1对多 同时编辑
+        {
+            var fromEach = EntityUtilExtensions.GetEntityValueWithPropertyName(fsql, typeof(TItem), editItem, nav.Key) as IEnumerable;
+            if (fromEach == null) continue;
+            var toEach = EntityUtilExtensions.GetEntityValueWithPropertyName(fsql, typeof(TItem), item, nav.Key) as IEnumerable;
+            var fromList = new List<object>();
+            var toList = new List<object>();
+            foreach (var obj in fromEach) fromList.Add(obj);
+            foreach (var obj in toEach) toList.Add(obj);
+            if (fromList.Count != toList.Count) continue;
+
+            foreach (var nav2 in fsql.CodeFirst.GetTableByEntity(nav.Value.RefEntityType).GetAllTableRef()
+                .Where(a => a.Value.Exception == null && a.Value.RefType == TableRefType.ManyToOne))
+                for (var a = 0; a < fromList.Count; a++)
+                    EntityUtilExtensions.SetEntityValueWithPropertyName(fsql, nav.Value.RefEntityType, toList[a], nav2.Key,
+                       EntityUtilExtensions.GetEntityValueWithPropertyName(fsql, nav.Value.RefEntityType, fromList[a], nav2.Key));
+        }
+
+        itemIsEdit = true;
+        if (OnEdit.HasDelegate) await OnEdit.InvokeAsync(item);
+    }
+    async Task Save()
+    {
+        if (itemIsEdit)
+        {
+            if (IsConfirmEdit && await JS.Confirm($"确定要修改数据吗？") == false) return;
+            await repository.UpdateAsync(item);
+        }
+        else
+        {
+            await repository.InsertAsync(item);
+        }
+        item = null;
+        await Load();
+    }
+
+    async Task RowClick(AdminItem<TItem> opt)
+    {
+        if (OnSelectChanged.HasDelegate)
+        {
+            if (opt == null) return;
+            await CheckboxOnChange(opt, !opt.Selected);
+        }
+        if (OnRowClick.HasDelegate)
+        {
+            if (opt == null) return;
+            await OnRowClick.InvokeAsync(opt);
+        }
+    }
+
+    object selectedSingleValue;
+    async Task CheckboxOnChange(AdminItem<TItem> opt, bool selected)
+    {
+        if (opt == null) //all
+        {
+            for (var a = 0; a < items.Count; a++)
+                items[a].Selected = selected;
+        }
+        else //single
+        {
+            if (IsSingleSelect)
+            {
+                var optPkValue = GetItemPrimaryValue(opt.Value);
+                TItem tmp = null;
+                items.ForEach(a =>
+                {
+                    a.Selected = object.Equals(GetItemPrimaryValue(a.Value), optPkValue) ? true : false;
+                    if (a.Selected) tmp = a.Value;
+                });
+                selectedSingleValue = optPkValue;
+            }
+            else
+            {
+                opt.Selected = selected;
+                for (var a = 0; a < items.Count; a++)
+                {
+                    if (items[a] == opt)
+                    {
+                        for (var b = a + 1; b < items.Count; b++)
+                        {
+                            if (items[b].Level > opt.Level) items[b].Selected = opt.Selected;
+                            else break;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        if (OnSelectChanged.HasDelegate) await OnSelectChanged.InvokeAsync(items);
+    }
+
+}

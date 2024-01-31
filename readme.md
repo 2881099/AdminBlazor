@@ -1,0 +1,94 @@
+# AdminBlazor
+
+AdminBlazor 是一款 Blazor SSR 后台管理项目，支持 RABC 权限菜单/按钮，支持一对一、一对多、多对多代码生成 .razor 界面。
+
+## 集成功能
+
+- 菜单管理
+- 角色管理
+- 用户管理
+- 定时任务
+- 字典管理
+
+## 依赖组件
+
+- BootstrapBlazor
+- FreeSql
+- FreeScheduler
+- Rougamo
+
+# 快速开始
+
+## 1. 安装模板
+
+> dotnet new install AdminBlazor.Template
+
+## 2. 新建项目
+
+> dotnet new admin
+
+## 3. 运行访问
+
+> http://localhost:5231/Admin
+
+用户名：admin 密码：freesql
+
+https://github.com/2881099/AdminBlazor/assets/16286519/e9ebec31-428d-402c-a384-de6123eeb1d6
+
+## 4. 新建菜单，类型选择增删改查
+
+![image](https://github.com/2881099/AdminBlazor/assets/16286519/ab9a60f1-5fae-4722-9cd8-e4acce65bb10)
+
+## 5. 生成代码
+
+![image](https://github.com/2881099/AdminBlazor/assets/16286519/c65ffdd0-2755-42e5-8e0b-209c6acaff90)
+
+# 权限
+
+- UserEntity 对多对 RoleEntity
+- RoleEntity 对多对 MenuEntity
+
+提示：AdminLoginInfo 类型已设置成 \[CascadeParameter\]
+
+```csharp
+class AdminLoginInfo
+{
+    public IServiceProvider Service { get; internal set; }
+    public UserEntity User { get; set; }
+    public List<RoleEntity> Roles { get; private set; }
+    public List<MenuEntity> RoleMenus { get; private set; }
+
+    //路由、按钮权限验证
+    public Task<bool> AuthPath(string path);
+    public Task<bool> AuthButton(string path)
+}
+```
+
+按钮权限，在 razor 中设置特性：
+
+```csharp
+[AdminButton("name")]
+void ButtonClick()
+{
+}
+```
+
+之后菜单管理，会出现对应的按钮项，勾选设置角色是否有按钮的权限。
+
+![image](https://github.com/2881099/AdminBlazor/assets/16286519/942ecd53-4f0e-421a-9d0c-0a27eb30d537)
+
+# 组件
+
+== AdminTable2
+
+== AllocTable2
+
+== InputTable2
+
+== SelectEntity
+
+== SelectEnum
+
+== SelectTable2
+
+== AdminModal

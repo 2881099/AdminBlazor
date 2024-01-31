@@ -1,0 +1,13 @@
+﻿<BootstrapBlazorRoot>
+    <Router AppAssembly="@typeof(Program).Assembly" AdditionalAssemblies="new []{ typeof(AdminSidebarMenu).Assembly }">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(LayoutAdmin)" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(LayoutAdmin)">
+                <p class="margin-top:100px;margin-left:100px;"> 正在开发中 ... </p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</BootstrapBlazorRoot>

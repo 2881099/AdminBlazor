@@ -1,0 +1,79 @@
+﻿@namespace BootstrapBlazor.Components
+@implements IDisposable
+
+<nav class="mt-2">
+    <ul class="nav sidebar-menu flex-column">
+        @if (menus != null)
+        {
+            foreach (var menu in menus.Where(a => a.ParentId == 0))
+            {
+                var menus2 = menus.Where(a => a.ParentId == menu.Id);
+
+                <li class="nav-item menu-open">
+                    <a href="" class="nav-link" onclick="var par=$(this).parent();if(par.hasClass('menu-open')) par.removeClass('menu-open'); else par.addClass('menu-open');return false;">
+                        <i class="nav-icon fas @menu.Icon.IsNull("fa-laptop")"></i>
+                        <p>
+                            @menu.Label
+                            <i class="nav-arrow fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        @foreach (var menu2 in menus2)
+                        {
+                            var isActive = string.Compare(currentPath, nav.ToAbsoluteUri(menu2.Path).AbsolutePath, true) == 0;
+
+                            <li class="nav-item">
+                                @if (isActive && currentQuery.IsNull() == false)
+                                {
+                                    @* QueryString 分页之后，再点菜单强制刷新。否则只是 url 变化，页面上无法通知状态 *@
+                                    <a @onclick="e => nav.NavigateTo(menu2.Path, true)" class="nav-link active" href="@menu2.Path">
+                                        <i class="far @menu2.Icon.IsNull("fa-circle") nav-icon"></i>
+                                        <p>@menu2.Label</p>
+                                    </a>
+                                }
+                                else
+                                {
+                                    @* NavLink 不支持匹配 QueryString *@
+                                    <a class="nav-link @(isActive ? "active" : "")" href="@menu2.Path">
+                                        <i class="far @menu2.Icon.IsNull("fa-circle") nav-icon"></i>
+                                        <p>@menu2.Label</p>
+                                    </a>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </li>
+            }
+        }
+    </ul>
+</nav>
+
+@code {
+    [CascadingParameter, Inject] AdminLoginInfo login { get; set; }
+    List<MenuEntity> menus;
+    string currentPath;
+    string currentQuery;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender) return;
+        menus = login.RoleMenus.Where(a => new[] { MenuEntityType.菜单, MenuEntityType.增删改查 }.Contains(a.Type)).OrderBy(a => a.Sort).ToList();
+        var uri = new Uri(nav.Uri);
+        currentPath = uri.AbsolutePath;
+        currentQuery = uri.Query;
+        StateHasChanged();
+
+        locationChangingHandler = nav.RegisterLocationChangingHandler(async e =>
+        {
+            var uri = nav.ToAbsoluteUri(e.TargetLocation);
+            currentPath = uri.AbsolutePath;
+            currentQuery = uri.Query;
+            StateHasChanged();
+            await Task.Yield();
+        });
+    }
+
+    IDisposable locationChangingHandler;
+    public void Dispose() => locationChangingHandler?.Dispose();
+
+}

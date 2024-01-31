@@ -1,0 +1,193 @@
+﻿@namespace BootstrapBlazor.Components
+@using FreeSql.Internal.Model
+@typeparam TItem where TItem : class, new()
+@typeparam TKey
+
+<div class="input-group">
+    @if (ItemChanged.HasDelegate)
+    {
+        if (Item == null)
+        {
+            <input value="" class="form-control disabled">
+        }
+        else
+        {
+            <input value="@DisplayText(Item)" class="form-control disabled">
+        }
+    }
+    else if (ItemsChanged.HasDelegate)
+    {
+        if (Items == null)
+        {
+            <input value="" class="form-control disabled">
+        }
+        else
+        {
+            <input value="@string.Join(",", Items.Select(a => DisplayText(a)))" class="form-control disabled">
+        }
+    } 
+    else if (ValueChanged.HasDelegate)
+    {
+        <input @oninput="async e => await ValueChanged.InvokeAsync(e.Value.ConvertTo<TKey>())" @bind="@Value" class="form-control disabled">
+    }
+    <button type="button" class="btn btn-primary" @onclick="OpenModal" role="button" aria-disabled="false">选择</button>
+</div>
+
+<AdminModal Visible="showModal" ClientId="@ClientId" DialogClassName="modal-lg modal-height0" Title="@ModalTitle" OnClose="OnClose">
+    @if (showModal)
+    {
+        if (TableTd1 != null && TableRow != null)
+        {
+            <AdminTable2 TItem="TItem" PageSize="PageSize" Context="item2"
+                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false" IsSingleSelect="ItemChanged.HasDelegate || ValueChanged.HasDelegate"
+                OnSelectChanged="OnSelectChanged" OnQuery="OnQuery">
+                <TableTh1>@TableTh1</TableTh1>
+                <TableTd1>@TableTd1(item2)</TableTd1>
+                <TableHeader>@TableHeader</TableHeader>
+                <TableRow>@TableRow?.Invoke(item2)</TableRow>
+            </AdminTable2>
+        }
+        else if (TableTd1 != null)
+        {
+            @* 只有 Td1 时生成一行四列的 Table *@
+            <AdminTable2 TItem="TItem" PageSize="PageSize" Context="item2"
+                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false" IsSingleSelect="ItemChanged.HasDelegate || ValueChanged.HasDelegate"
+                OnSelectChanged="OnSelectChanged" OnQuery="OnQuery">
+                <TableTh1>@TableTh1</TableTh1>
+                <TableTd1>@TableTd1(item2)</TableTd1>
+            </AdminTable2>
+        }
+        else if (TableRow != null)
+        {
+            <AdminTable2 TItem="TItem" PageSize="PageSize" Context="item2"
+                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false" IsSingleSelect="ItemChanged.HasDelegate || ValueChanged.HasDelegate"
+                OnSelectChanged="OnSelectChanged" OnQuery="OnQuery">
+                <TableHeader>@TableHeader</TableHeader>
+                <TableRow>@TableRow?.Invoke(item2)</TableRow>
+            </AdminTable2>
+        }
+
+        var selectedCount = ItemsChanged.HasDelegate ? allItems.Values.Where(a => a.Selected).Count() : (currentItems?.Where(a => a.Selected).Count() ?? 0);
+        <div class="modal-footer">
+            @if (selectedCount > 0)
+            {
+                <button @onclick="e => { foreach (var item in allItems.Values) item.Selected = false; }" type="button" class="ml-2 btn btn-light"><i class="far fa-square"></i> 重置</button>
+                <button @onclick="Finish" type="button" class="ml-2 btn btn-success"><i class="fas fa-plus"></i> 确认选择 @selectedCount 项</button>
+            }
+            else
+            {
+                <button type="button" class="ml-2 btn btn-light disabled"><i class="far fa-square"></i> 重置</button>
+                <button type="button" class="ml-2 btn btn-success disabled"><i class="fas fa-plus"></i> 确认选择 @selectedCount 项</button>
+            }
+        </div>
+    }
+</AdminModal>
+
+@code {
+    [Parameter] public TKey Value { get; set; }
+    [Parameter] public EventCallback<TKey> ValueChanged { get; set; }
+    [Parameter] public EventCallback<TKey> OnValueChanged { get; set; }
+    [Parameter] public TItem Item { get; set; }
+    [Parameter] public EventCallback<TItem> ItemChanged { get; set; }
+    [Parameter] public EventCallback<TItem> OnItemChanged { get; set; }
+    [Parameter] public List<TItem> Items { get; set; }
+    [Parameter] public EventCallback<List<TItem>> ItemsChanged { get; set; }
+    [Parameter] public EventCallback<List<TItem>> OnItemsChanged { get; set; }
+    [Parameter] public Func<TItem, string> DisplayText { get; set; }
+
+    [Parameter] public string ModalTitle { get; set; } = "选择..";
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public bool IsSearchText { get; set; } = true;
+
+    [Parameter] public RenderFragment? TableHeader { get; set; }
+    [Parameter] public RenderFragment<TItem>? TableRow { get; set; }
+    [Parameter] public RenderFragment? TableTh1 { get; set; }
+    [Parameter] public RenderFragment<TItem>? TableTd1 { get; set; }
+    [Parameter] public EventCallback<AdminQueryEventArgs<TItem>> OnQuery { get; set; }
+
+    TableInfo metaTItem;
+    TKey GetPrimaryValue(TItem item) => metaTItem.Primarys[0].GetValue(item).ConvertTo<TKey>();
+    protected override void OnInitialized()
+    {
+        metaTItem = fsql.CodeFirst.GetTableByEntity(typeof(TItem));
+        if (metaTItem.Primarys.Length != 1) throw new ArgumentException("InputTable2 要求使用类型必须使用单一主键");
+        if (metaTItem.Primarys[0].CsType.NullableTypeOrThis() != typeof(TKey).NullableTypeOrThis()) throw new ArgumentException("InputTable2 要求使用类型的主键，必须与 TKey 类型相同");
+    }
+
+    void OpenModal()
+    {
+        allItems.Clear();
+        if (Item != null)
+            allItems[GetPrimaryValue(Item)] = new AdminItem<TItem>(Item) { Selected = true };
+        if (Items != null)
+            foreach (var item in Items)
+                allItems[GetPrimaryValue(item)] = new AdminItem<TItem>(item) { Selected = true };
+        showModal = init = true;
+        if (currentItems != null) OnSelectChanged(currentItems);
+    }
+
+    string ClientId = $"modal-{Guid.NewGuid().ToString("n")}";
+    bool showModal, init;
+    List<AdminItem<TItem>> currentItems;
+    Dictionary<TKey, AdminItem<TItem>> allItems = new();
+    void OnSelectChanged(List<AdminItem<TItem>> e)
+    {
+        if (currentItems != e || init)
+        {
+            if (currentItems != e) currentItems = e;
+            init = false;
+            currentItems.ForEach(a =>
+            {
+                var pkval = GetPrimaryValue(a.Value);
+                if (ItemChanged.HasDelegate)
+                    a.Selected = object.Equals(GetPrimaryValue(Item), pkval);
+                else if (ItemsChanged.HasDelegate)
+                    a.Selected = allItems.TryGetValue(pkval, out var subi) && subi.Selected;
+                else if (ValueChanged.HasDelegate)
+                    a.Selected = object.Equals(Value, pkval);
+                allItems[pkval] = a;
+            });
+            StateHasChanged();
+        }
+    }
+    async Task Finish()
+    {
+        if (ItemChanged.HasDelegate)
+        {
+            Item = allItems.Values.Where(a => a.Selected).Select(a => a.Value).FirstOrDefault();
+            await ItemChanged.InvokeAsync(Item);
+            if (OnItemChanged.HasDelegate) await OnItemChanged.InvokeAsync(Item);
+            var pkval = GetPrimaryValue(Item);
+            await ValueChanged.InvokeAsync(pkval);
+            if (OnValueChanged.HasDelegate) await OnValueChanged.InvokeAsync(pkval);
+        }
+        else if (ItemsChanged.HasDelegate)
+        {
+            var ischanged = false;
+            if (Items == null)
+            {
+                Items = new List<TItem>();
+                ischanged = true;
+            }
+            Items.Clear();
+            Items.AddRange(allItems.Values.Where(a => a.Selected).Select(a => a.Value));
+            if (ischanged)
+            {
+                await ItemsChanged.InvokeAsync(Items);
+                if (OnItemsChanged.HasDelegate) await OnItemsChanged.InvokeAsync(Items);
+            }
+        }
+        else if (ValueChanged.HasDelegate)
+        {
+            Value = GetPrimaryValue(allItems.Values.Where(a => a.Selected).FirstOrDefault()?.Value);
+            await ValueChanged.InvokeAsync(Value);
+            if (OnValueChanged.HasDelegate) await OnValueChanged.InvokeAsync(Value);
+        }
+        OnClose();
+    }
+    void OnClose()
+    {
+        showModal = false;
+        allItems.Clear();
+    }
+}

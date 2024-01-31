@@ -1,0 +1,186 @@
+﻿@page "/Admin/Menu"
+@using System.Reflection
+
+<PageTitle>菜单管理</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <AdminTable2 TItem="MenuEntity" PageSize="-1" Context="item" 
+                IsSearchText="false" 
+                InitQuery="InitQuery" OnQuery="OnQuery" OnEdit="OnEdit" OnRemove="OnRemove">
+
+                <TableHeader>
+                    <th>类型</th>
+                    <th>路径</th>
+                    <th>Icon</th>
+                    <th>新窗口</th>
+                    <th>排序</th>
+                    <th>创建时间</th>
+                </TableHeader>
+                <TableTh1>菜单名称</TableTh1>
+                <TableTd1>@item.Label</TableTd1>
+                <TableRow>
+                    <td>
+                        @item.Type
+                        @if (item.Type == MenuEntityType.增删改查)
+                        {
+                            <button @onclick="e => BeginDesignCrud(item)" type="button" data-bs-toggle="modal" data-target="#roleList_editModal" class="ml-2 btn btn-light btn-xs"><i class="fa fa-user-secret"></i>配置</button>
+                        }
+                    </td>
+                    <td>@item.Path</td>
+                    <td>@item.Icon</td>
+                    <td>@(item.TargetBlank ? "是" : "否")</td>
+                    <td>@item.Sort</td>
+                    <td>@item.CreatedTime</td>
+                </TableRow>
+
+                <EditTemplate>
+                    <div class="row">
+                        <div class="form-group col-12">
+                            <label class="form-label">父菜单</label>
+                            <InputTable2 TItem="MenuEntity" TKey="long" @bind-Value="item.ParentId" @bind-Item="item.Parent" DisplayText="@(a => $"[{a.Id}]{a.Label}")" Context="item2" IsSearchText="false"
+                                OnQuery="e => e.Select.Where(a => a.Type == MenuEntityType.菜单 || a.Type == MenuEntityType.增删改查).OrderBy(a => a.Sort)" OnItemChanged="ParentChanged">
+                                <TableTh1>菜单名称</TableTh1>
+                                <TableTd1>@item2.Label</TableTd1>
+                                <TableHeader>
+                                    <th>路径</th>
+                                    <th>排序</th>
+                                </TableHeader>
+                                <TableRow>
+                                    <td>@item2.Path</td>
+                                    <td>@item2.Sort</td>
+                                </TableRow>
+                            </InputTable2>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-6">
+                            <label class="form-label">名称</label>
+                            <input @bind="item.Label" type="text" class="form-control" placeholder="" maxlength="50" data-valid="true">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">Icon</label>
+                            <input @bind="item.Icon" type="text" class="form-control" placeholder="fa-circle" maxlength="50" data-valid="true">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-12">
+                            <label class="form-label">路径</label>
+                            <input @oninput="e => MenuPathChanged(e.Value.ConvertTo<string>())" @bind="item.Path" type="text" class="form-control" placeholder="Admin/Menu" maxlength="50" data-valid="true">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="form-group col-6">
+                            <label class="form-label">类型</label>
+                            <SelectEnum TEnum="MenuEntityType" @bind-Value="item.Type" OnValueChanged="MenuEntityTypeChanged" />
+                        </div>
+                        <div class="form-group col-3">
+                            <label class="form-label">排序</label>
+                            <input @bind="item.Sort" type="number" class="form-control" data-valid="true">
+                        </div>
+                        <div class="form-group col-3">
+                            <label class="form-label">新窗口</label>
+                            <Switch @bind-Value="item.TargetBlank" OnColor="Color.Success" />
+                        </div>
+                    </div>
+                </EditTemplate>
+
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+<AdminTable2Design Menu="menuDesign" OnClose="e => menuDesign = null" />
+
+
+@code {
+    [Inject] IAggregateRootRepository<MenuEntity> repository { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("类型", "Type", true, 12, 
+                string.Join(",", Enum.GetNames(typeof(MenuEntityType))), 
+                string.Join(",", Enum.GetNames(typeof(MenuEntityType)).Select(a => (int)Enum.Parse<MenuEntityType>(a)))),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<MenuEntity> e) => e.Select
+        //.WhereIf(e.Filters[0].HasValue, a => a.Type >= e.Filters[0].Value<MenuEntityType>())
+        .WhereIf(!e.Filters[0].HasValue, a => a.Type != MenuEntityType.按钮)
+        .WhereIf(e.Filters[0].HasValue, a => e.Filters[0].Values<MenuEntityType>().Contains(a.Type))
+        .WhereIf(e.SearchText.IsNull() == false, a => a.Label.Contains(e.SearchText) || a.Path.Contains(e.SearchText))
+        .OrderBy(a => a.Sort);
+    MenuEntity item;
+    async Task OnEdit(MenuEntity menu)
+    {
+        item = menu;
+        if (menu.Parent == null && menu.ParentId > 0) menu.Parent = await repository.Where(a => a.Id == menu.ParentId).FirstAsync();
+    }
+    void ParentChanged(MenuEntity parent)
+    {
+        if (item.Id == 0 && parent?.Path.IsNull() == false) 
+        {
+            item.Path = parent.Path + "/xx";
+            item.PathLower = item.Path.ToLower();
+        }
+    }
+    void MenuPathChanged(string path)
+    {
+        path = path.Trim('/');
+        if (item.Path != path)
+        {
+            item.Path = path;
+            item.PathLower = item.Path.ToLower();
+            StateHasChanged();
+        }
+    }
+    void MenuEntityTypeChanged(MenuEntityType type)
+    {
+        if (item.Id == 0)
+        {
+            if (type != MenuEntityType.增删改查) item.Childs?.Clear();
+            else if (item.Childs == null)
+            {
+                item.Childs = new List<MenuEntity>
+                {
+                    new MenuEntity
+                    {
+                        Label = "添加",
+                        Path = "add",
+                        Sort = 10011,
+                        Type = MenuEntityType.按钮,
+                    },
+                    new MenuEntity
+                    {
+                        Label = "编辑",
+                        Path = "edit",
+                        Sort = 10012,
+                        Type = MenuEntityType.按钮,
+                    },
+                    new MenuEntity
+                    {
+                        Label = "删除",
+                        Path = "remove",
+                        Sort = 10013,
+                        Type = MenuEntityType.按钮,
+                    }
+                };
+            }
+        }
+    }
+    async Task OnRemove(List<MenuEntity> list)
+    {
+        await list.IncludeManyAsync(repository.Orm, a => a.Childs);
+    }
+
+    MenuEntity menuDesign;
+    void BeginDesignCrud(MenuEntity menu)
+    {
+        menuDesign = menu;
+    }
+}

@@ -1,0 +1,47 @@
+﻿@namespace BootstrapBlazor.Components
+
+<div class="input-group input-group-sm">
+    <input @bind="_value" @onkeyup="KeyHandler" @onkeyup:preventDefault type="text" class="form-control" placeholder="Search">
+    <span @onclick="SearchClick" class="btn btn-primary">
+        <i class="fas fa-search"></i>
+    </span>
+</div>
+
+@code {
+
+    [Parameter]
+    public AdminQueryInfo AdminQuery { get; set; }
+    AdminQueryInfo q => AdminQuery;
+
+    string _value;
+    protected override void OnInitialized()
+    {
+        if (q.IsQueryString)
+        {
+            _value = nav.GetQueryStringValue(q.SearchTextQueryStringName);
+            q.SearchText = _value;
+        }
+    }
+
+    async Task KeyHandler(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await SearchClick();
+    }
+
+    async Task SearchClick()
+    {
+        q.SearchText = _value;
+        if (q.IsQueryString)
+        {
+            var dict = new Dictionary<string, object>();
+            dict[q.SearchTextQueryStringName] = _value.IsNull() ? null : _value;
+            dict[q.PageNumberQueryStringName] = null;
+            var url = nav.GetUriWithQueryParameters(dict);
+            nav.NavigateTo(url);
+        }
+        q.PageNumber = 1;
+        if (q.InvokeQueryAsync != null)
+            await q.InvokeQueryAsync();
+    }
+}

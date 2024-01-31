@@ -1,0 +1,146 @@
+@page "/Admin/Dict"
+@using BootstrapBlazor.Components
+
+<PageTitle>数据字典</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-6">
+
+            <AdminTable2 TItem="DictEntity" Context="item" PageSize="20" Title="字典分类" 
+                IsMultiSelect="false" IsSingleSelect="false" IsQueryString="false" IsRefersh="false"
+                OnQuery="OnQuery" OnEdit="OnEdit" OnRemove="OnRemove" OnRowClick="OnRowClick">
+
+                <TableHeader>
+                    <th>编码</th>
+                    <th>描述</th>
+                </TableHeader>
+                <TableRow>
+                    <td>@item.Name</td>
+                    <td>@item.Description</td>
+                </TableRow>
+                <EditTemplate>
+                    <div class="row">
+                        <div class="form-group col-6">
+                            <label class="form-label">编码</label>
+                            <input @bind="item.Name" type="text" class="form-control" placeholder="" maxlength="50">
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">描述</label>
+                            <textarea @bind="item.Description" class="form-control" placeholder="" maxlength="500" rows="5"></textarea>
+                        </div>
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+
+        <div class="col-6">
+
+            <AdminTable2 TItem="DictEntity" Context="item" PageSize="20" Title="字典数据"
+                IsQueryString="false" IsRefersh="false" IsRowRemove="false"
+                IsAdd="clickOpt?.Value != null" IsEdit="clickOpt?.Value != null"
+                OnQuery="OnQuery2" InitQuery="InitQuery2" OnEdit="OnEdit2">
+
+                <TableHeader>
+                    <th>名称</th>
+                    <th>值</th>
+                    <th>排序</th>
+                    <th>启用</th>
+                </TableHeader>
+                <TableRow>
+                    <td>@item.Name</td>
+                    <td>@item.Value</td>
+                    <td>@item.Sort</td>
+                    <td>
+                        @if (item.Enabled)
+                        {
+                            <span class="px-1 rounded-1 border" style="background-color: var(--bs-success-bg-subtle); --bs-border-color: var(--bs-success-border-subtle); color: var(--bs-success-text);">是</span>
+                        }
+                        else
+                        {
+                            <span class="px-1 rounded-1 border" style="background-color: var(--bs-danger-bg-subtle); --bs-border-color: var(--bs-danger-border-subtle); color: var(--bs-danger-text);">否</span>
+                        }
+                    </td>
+                </TableRow>
+                <EditTemplate>
+                    <div class="row">
+                        <div class="form-group col-6">
+                            <label class="form-label">名称</label>
+                            <input @bind="item.Name" type="text" class="form-control" placeholder="" maxlength="50">
+                        </div>
+                        <div class="form-group col-3">
+                            <label class="form-label">排序</label>
+                            <input @bind="item.Sort" type="number" class="form-control" placeholder="">
+                        </div>
+                        <div class="form-group col-3">
+                            <label class="form-label">启用</label>
+                            <Switch @bind-Value="item.Enabled" OnColor="Color.Success" />
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">值</label>
+                            <input @bind="item.Value" type="text" class="form-control" placeholder="" maxlength="50">
+                        </div>
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Inject] IAggregateRootRepository<DictEntity> repository { get; set; }
+
+    void OnQuery(AdminQueryEventArgs<DictEntity> e)
+    {
+        e.Select.Where(a => a.ParentId == 0)
+            .WhereIf(!e.SearchText.IsNull(), a => a.Name.Contains(e.SearchText) ||
+                a.Description.Contains(e.SearchText));
+    }
+    async Task OnEdit(DictEntity item)
+    {
+        item.ParentId = 0;
+        await Task.Yield();
+    }
+    async Task OnRemove(List<DictEntity> items)
+    {
+        var ids = items.Select(a => a.Id).ToArray();
+        await fsql.Delete<DictEntity>().Where(a => ids.Contains(a.ParentId)).ExecuteAffrowsAsync();
+        clickOpt = new(await fsql.Select<DictEntity>().Where(a => a.ParentId == 0 && !ids.Contains(a.Id)).FirstAsync());
+        await query2.InvokeQueryAsync();
+    }
+    AdminItem<DictEntity> clickOpt;
+    async Task OnRowClick(AdminItem<DictEntity> opt)
+    {
+        if (clickOpt != opt)
+        {
+            if (clickOpt != null) clickOpt.RowClass = "";
+            opt.RowClass = "active";
+            clickOpt = opt;
+            if (query2?.InvokeQueryAsync != null) await query2.InvokeQueryAsync();
+        }
+        await Task.Yield();
+    }
+
+    AdminQueryInfo query2;
+    async Task InitQuery2(AdminQueryInfo e) {
+        query2 = e;
+        await Task.Yield();
+    }
+    void OnQuery2(AdminQueryEventArgs<DictEntity> e)
+    {
+        e.Select
+            .WhereIf(clickOpt != null, a => a.ParentId == clickOpt.Value.Id)
+            .Cancel(() => clickOpt == null)
+            .WhereIf(!e.SearchText.IsNull(), a => a.Name.Contains(e.SearchText) ||
+                a.Description.Contains(e.SearchText))
+            .OrderBy(a => a.Sort);
+    }
+    async Task OnEdit2(DictEntity item)
+    {
+        item.ParentId = clickOpt.Value.Id;
+        if (item.Id == 0)
+            item.Sort = await fsql.Select<DictEntity>().Where(a => a.ParentId == item.ParentId).MaxAsync(a => a.Sort) + 1;
+        await Task.Yield();
+    }
+}

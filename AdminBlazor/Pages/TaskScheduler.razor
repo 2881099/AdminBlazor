@@ -1,0 +1,451 @@
+@page "/Admin/TaskScheduler"
+@using FreeScheduler
+
+<PageTitle>订单管理</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-info card-outline">
+                <div class="card-header d-block">
+                    <blockquote class="quote-info m-0 p-0 mt-2 mb-3 pl-2">
+                        @LoadResult?.Description
+                    </blockquote>
+                    <AdminSearchFilter AdminQuery="q" />
+                </div>
+                <div class="card-header d-block">
+                    <button @onclick="BeginAdd" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-plus"></i> 添加</button>
+                    <button @onclick="e => Load()" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
+                    @if (LoadResult?.Clusters?.Any() == true)
+                    {
+                        <button @onclick="LoadClusterLog" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-log"></i> 集群日志</button>
+                    }
+                    <div class="float-end">
+                        <AdminSearchText AdminQuery="q" />
+                    </div>
+                </div>
+                <div class="card-body p-0" style="border:none;">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered table-sm m-0">
+                            <thead>
+                                <tr>
+                                    <th>操作</th>
+                                    <th>标题</th>
+                                    <th>定时</th>
+                                    <th>轮次</th>
+                                    <th>内容</th>
+                                    <th>状态</th>
+                                    <th>错误</th>
+                                    <th>最后运行</th>
+                                    <th>创建时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var x = 0; x < LoadResult?.Tasks.Count; x++)
+                                {
+                                    var item = LoadResult.Tasks[x];
+                                    <tr>
+                                        <td>
+                                            <input type="button" class="btn btn-xs btn-danger" value="删除" @onclick="e => RemoveTask(item)" />
+                                            @if (item.Status == FreeScheduler.TaskStatus.Paused)
+                                            {
+                                                <input type="button" class="ml-2 btn btn-xs btn-success" value="恢复" @onclick="e => ResumeTask(item)" />
+                                            }
+                                            @if (item.Status == FreeScheduler.TaskStatus.Running)
+                                            {
+                                                <input type="button" class="ml-2 btn btn-xs btn-warning" value="暂停" @onclick="e => PauseTask(item)" />
+                                            }
+                                            @if (item.Status != FreeScheduler.TaskStatus.Completed)
+                                            {
+                                                <input type="button" class="ml-2 btn btn-xs btn-light" value="立即触发" @onclick="e => RunNowTask(item)" />
+                                            }
+                                        </td>
+                                        <td>@item.Topic</td>
+                                        <td>
+                                            @if (item.Interval == TaskInterval.Custom)
+                                            {
+                                                @item.IntervalArgument
+                                            }
+                                            else
+                                            {
+                                                @item.Interval
+                                                @(" ")
+                                                @item.IntervalArgument
+                                            }
+                                        </td>
+                                        <td>
+                                            <Button class="btn btn-xs btn-light" @onclick="e => LoadTaskLog(item)">@item.CurrentRound/@item.Round</Button>
+                                        </td>
+                                        <td>@item.Body</td>
+                                        <td>
+                                            @if (item.Status == FreeScheduler.TaskStatus.Paused)
+                                            {
+                                                @("已暂停")
+                                            }
+                                            else if (item.Status == FreeScheduler.TaskStatus.Running)
+                                            {
+                                                @("运行中")
+                                            }
+                                            else if (item.Status != FreeScheduler.TaskStatus.Completed)
+                                            {
+                                                @("已结束")
+                                            }
+                                        </td>
+                                        <td>@item.ErrorTimes</td>
+                                        <td>@item.LastRunTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td>@item.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <AdminPagination AdminQuery="q" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<AdminModal Visible="task != null" Title="【添加】定时任务" OnClose="e => task = null" OnYes="OnSave" DialogClassName="modal-lg">
+    @if (task != null)
+    {
+        <div class="row">
+            <div class="form-group col-12">
+                <label class="form-label">模板</label>
+                <RadioList TValue="string" Items="templateList" OnSelectedChanged="@OnTemplateChanged" IsVertical="false" />
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">标题</label>
+                <input @bind="task.Topic" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">@(task.Topic == "[系统预留]清理任务数据" ? "清理多久之前的记录(单位:秒)" : "内容")</label>
+                <textarea @bind="task.Body" class="form-control" placeholder="" maxlength="1024" rows="5"></textarea>
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">定时</label>
+                <select @oninput="e => IntervalChanged(e.Value.ConvertTo<TaskInterval>())" @bind="@task.Interval" class="form-control">
+                    <option value="@TaskInterval.SEC">秒</option>
+                    <option value="@TaskInterval.RunOnDay">每天</option>
+                    <option value="@TaskInterval.RunOnWeek">每周</option>
+                    <option value="@TaskInterval.RunOnMonth">每月</option>
+                    <option value="@TaskInterval.Custom">Cron</option>
+                </select>
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">
+                    @if (task.Interval == TaskInterval.SEC)
+                    {
+                        @($"{task.IntervalArgument}秒")
+                    }
+                    @if (task.Interval == TaskInterval.RunOnDay)
+                    {
+                        @($"每天{task.IntervalArgument}")
+                    }
+                    @if (task.Interval == TaskInterval.RunOnWeek)
+                    {
+                        var args = task.IntervalArgument.Split(':');
+                        if (args.Length == 4)
+                        {
+                            @($"每周{new[] { "日", "一", "二", "三", "四", "五", "六" }[args[0].ConvertTo<int>()]} {string.Join(":", args.Skip(1))}")
+                        }
+                    }
+                    @if (task.Interval == TaskInterval.RunOnMonth)
+                    {
+                        var args = task.IntervalArgument.Split(':');
+                        if (args.Length == 4)
+                        {
+                            @($"每月{(args[0].ConvertTo<int>() > 0 ? "第" : "最后第")}{Math.Abs(args[0].ConvertTo<int>())}天 {string.Join(":", args.Skip(1))}")
+                        }
+                    }
+                    @if (task.Interval == TaskInterval.Custom)
+                    {
+                        @("Cron 表达式")
+                    }
+                </label>
+                <input @oninput="e => { task.IntervalArgument = e.Value.ConvertTo<string>(); }" @bind="task.IntervalArgument" type="text" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">轮次</label>
+                <div class="float-end">
+                    <input @oninput="e => task.Round = e.Value.ConvertTo<bool>() ? -1 : 1" id="roundNever" type="checkbox" checked="@roundNever" /><label for="roundNever">永久</label>
+                </div>
+                <BootstrapInput TValue="int" @bind-Value="task.Round" IsDisabled="task.Round == -1" />
+            </div>
+        </div>
+    }
+</AdminModal>
+
+<AdminModal Visible="taskLog != null" OnClose="e => taskLog = null" Title="@($"【日志】{logTask?.Topic}")" DialogClassName="modal-xl">
+    <div class="card card-info card-outline">
+        <div class="card-header d-block">
+            <AdminSearchFilter AdminQuery="qLog" />
+        </div>
+        <div class="card-header d-block">
+            <button @onclick="e => LoadTaskLog()" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
+        </div>
+        <div class="card-body p-0" style="border:none;">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered table-sm m-0">
+                    <thead>
+                        <tr>
+                            <th>第几轮</th>
+                            <th>耗时</th>
+                            <th>成功</th>
+                            <th>异常信息</th>
+                            <th>备注</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (taskLog != null) foreach (var log in taskLog.Logs)
+                            {
+                                <tr>
+                                    <td>@log.Round</td>
+                                    <td>@log.ElapsedMilliseconds ms</td>
+                                    <td>
+                                        @if (log.Success)
+                                        {
+                                            <span class="text-success">是</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-danger">是</span>
+                                        }
+                                    </td>
+                                    <td style="overflow-wrap:break-word;word-break:break-all;">@log.Exception</td>
+                                    <td style="overflow-wrap:break-word;word-break:break-all;">@log.Remark</td>
+                                    <td>@log.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                </tr>
+                            }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <AdminPagination AdminQuery="qLog" />
+        </div>
+    </div>
+</AdminModal>
+
+@if (LoadResult?.Clusters?.Any() == true)
+{
+    <AdminModal Visible="clusterLog != null" OnClose="e => clusterLog = null" Title="集群日志" DialogClassName="modal-xl">
+        <div class="card card-info card-outline">
+            <div class="card-header d-block">
+                <AdminSearchFilter AdminQuery="qCluster" />
+            </div>
+            <div class="card-header d-block">
+                <button @onclick="e => LoadClusterLog()" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
+            </div>
+            <div class="card-body p-0" style="border:none;">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered table-sm m-0">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>集群Id</th>
+                                <th>集群名称</th>
+                                <th>内容</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (clusterLog != null) foreach (var log in clusterLog.Logs)
+                                {
+                                    <tr>
+                                        <td>@log.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td>@log.ClusterId</td>
+                                        <td>@log.ClusterName</td>
+                                        <td style="overflow-wrap:break-word;word-break:break-all;">@log.Message</td>
+                                    </tr>
+                                }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <AdminPagination AdminQuery="qCluster" />
+            </div>
+        </div>
+    </AdminModal>
+}
+
+@code {
+
+    AdminQueryInfo q = new();
+    protected override void OnInitialized()
+    {
+        q.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("集群", "ClusterId", false, 12, "", ""),
+            new AdminFilterInfo("状态", "Status", false, 12, "运行中,暂停中,已结束", "0,1,2"),
+        };
+    }
+
+    async protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        q.InvokeQueryAsync = Load;
+        await Load();
+    }
+
+    Datafeed.ResultGetPage LoadResult;
+    async Task Load()
+    {
+        LoadResult = Datafeed.GetPage(scheduler,
+            q.Filters[0].HasValue ? q.Filters[0].Value<string>() : null,
+            q.SearchText, 
+            q.Filters[1].HasValue ? q.Filters[1].Value<FreeScheduler.TaskStatus?>() : null,
+            null, null, 
+            20, q.PageNumber);
+        q.Total = LoadResult.Total;
+        if (LoadResult.Clusters?.Any() == true)
+        {
+            q.Filters[0] = new AdminFilterInfo("集群", "ClusterId",
+                string.Join(",", LoadResult.Clusters.Select(a => $"{a.Name}({a.TaskCount})")),
+                string.Join(",", LoadResult.Clusters.Select(a => a.Id)));
+        }
+        StateHasChanged();
+        await Task.Yield();
+    }
+
+    TaskInfo task;
+    bool roundNever = true;
+    async Task OnSave()
+    {
+        Datafeed.AddTask(scheduler, task.Topic, task.Body, task.Round, task.Interval, task.IntervalArgument);
+        task = null;
+        await q.InvokeQueryAsync();
+    }
+
+    [AdminButton("add")]
+    async Task BeginAdd()
+    {
+        task = new();
+        if (task.Interval == 0) IntervalChanged(TaskInterval.SEC);
+        if (task.Round == 0) task.Round = -1;
+        roundNever = task.Round < 0;
+        await Task.Yield();
+    }
+    void IntervalChanged(TaskInterval interval)
+    {
+        task.Interval = interval;
+        switch (task.Interval)
+        {
+            case TaskInterval.SEC:
+                task.IntervalArgument = "60";
+                break;
+            case TaskInterval.RunOnDay:
+                task.IntervalArgument = "22:00:00";
+                break;
+            case TaskInterval.RunOnWeek:
+                task.IntervalArgument = "5:22:00:00";
+                break;
+            case TaskInterval.RunOnMonth:
+                task.IntervalArgument = "1:22:00:00";
+                break;
+            case TaskInterval.Custom:
+                task.IntervalArgument = "* * * * * *";
+                break;
+        }
+    }
+
+    IEnumerable<SelectedItem> templateList = new SelectedItem[] { new("0", "自定义"), new("1", "HTTP请求"), new("2", "清理任务数据") };
+    async Task OnTemplateChanged(IEnumerable<SelectedItem> items, string value)
+    {
+        if (value.IsNull()) return;
+        switch (value)
+        {
+            case "0":
+                task.Topic = "";
+                task.Body = "";
+                break;
+            case "1":
+                task.Topic = "[系统预留]Http请求";
+                task.Body = @"{
+	""method"": ""get"",
+	""url"": ""https://freesql.net/guide/freescheduler.html"",
+	""header"":
+	{
+		""Content-Type"": ""application/json"",
+	},
+	""body"": ""{}"",
+}";
+                break;
+            case "2":
+                task.Topic = "[系统预留]清理任务数据";
+                task.Body = "86400";
+                break;
+        }
+        StateHasChanged();
+        await Task.Yield();
+    }
+
+    [AdminButton("remove")]
+    async Task RemoveTask(TaskInfo task)
+    {
+        if (await JS.Confirm("确定删除任务吗？") == false) return;
+        scheduler.RemoveTask(task.Id);
+        await Load();
+    }
+    [AdminButton("resume")]
+    async Task ResumeTask(TaskInfo task)
+    {
+        scheduler.ResumeTask(task.Id);
+        await Load();
+    }
+    [AdminButton("pause")]
+    async Task PauseTask(TaskInfo task)
+    {
+        scheduler.PauseTask(task.Id);
+        await Load();
+    }
+    [AdminButton("runnow")]
+    async Task RunNowTask(TaskInfo task)
+    {
+        scheduler.RunNowTask(task.Id);
+        await Load();
+    }
+
+    Datafeed.ResultGetLogs taskLog;
+    AdminQueryInfo qLog = new()
+    {
+        IsQueryString = false,
+        PageSize = 10
+    };
+    TaskInfo logTask;
+    [AdminButton("tasklog")]
+    void LoadTaskLog(TaskInfo task = null)
+    {
+        if (qLog.InvokeQueryAsync == null) qLog.InvokeQueryAsync = async () =>
+        {
+            LoadTaskLog(logTask);
+            await Task.Yield();
+        };
+        if (task != null) logTask = task;
+        taskLog = Datafeed.GetLogs(scheduler, logTask.Id, qLog.PageSize, qLog.PageNumber);
+        qLog.Total = taskLog.Total;
+        StateHasChanged();
+    }
+
+    Datafeed.ResultGetClusterLogs clusterLog;
+    AdminQueryInfo qCluster = new()
+    {
+            IsQueryString = false,
+        PageSize = 10
+    };
+    [AdminButton("clusterlog")]
+    void LoadClusterLog()
+    {
+        if (qLog.InvokeQueryAsync == null) qLog.InvokeQueryAsync = async () =>
+        {
+            LoadClusterLog();
+            await Task.Yield();
+        };
+        clusterLog = Datafeed.GetClusterLogs(scheduler, qCluster.PageSize, qCluster.PageNumber);
+        qCluster.Total = clusterLog.Total;
+        StateHasChanged();
+    }
+}

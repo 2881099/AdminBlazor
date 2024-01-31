@@ -1,0 +1,120 @@
+@page "/Admin/Login"
+@using AdminBlazor.Infrastructure.Encrypt
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Http
+@using System.Collections.Concurrent
+@using System.Web
+@layout LayoutEmpty
+
+<div class="login-page bg-body-secondary">
+    <div class="login-box">
+        <div class="card card-outline card-primary">
+            <div class="card-header d-block pt-4 pb-4">
+                <a href="@AdminBlazorOptions.Global_BaseUrl" class="link-dark text-center link-offset-2 link-opacity-100 link-opacity-50-hover">
+                    <h2 class="mb-0"><b>@AdminBlazorOptions.Global_Title</b></h2>
+                </a>
+            </div>
+            <div class="card-body login-card-body pl-3 pr-3 pb-4">
+                <div class="input-group mt-3 mb-3">
+                    <div class="form-floating"><input @bind="username" id="loginUser" type="text" class="form-control" placeholder=""><label for="loginUser" style="font-weight:300">用户名</label></div>
+                    <div class="input-group-text"><span class="fa fa-user"></span></div>
+                </div>
+                <div class="input-group mt-3 mb-4">
+                    <div class="form-floating"> <input @bind="password" id="loginPassword" type="password" class="form-control" placeholder=""><label for="loginPassword" style="font-weight:300">密码</label></div>
+                    <div class="input-group-text"><span class="fas fa-lock"></span></div>
+                </div>
+                <div class="row">
+                    <div class="col-8 d-inline-flex align-items-center">
+                        <div class="form-check"><input @bind="remember" class="form-check-input" type="checkbox" id="flexCheckDefault"><label class="form-check-label" for="flexCheckDefault">记住</label></div>
+                    </div>
+                    <div class="col-4">
+                        <div class="d-grid gap-2"> <button @onclick="Submit" class="btn btn-primary">登陆</button> </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject]
+    public IHttpContextAccessor? httpContextAccessor { get; set; }
+    string username, password;
+    bool remember = true;
+
+    async Task Submit()
+    {
+        var context = httpContextAccessor.HttpContext;
+        if (username.IsNull() || password.IsNull())
+        {
+            await JS.Error("登陆失败！", "用户名或密码不能为空");
+            return;
+        }
+
+        var ip = context.Connection?.RemoteIpAddress?.ToString() ?? "";
+        if (limit.TryGetValue(ip, out var count) && count >= 5)
+        {
+            await JS.Error("频率过高！", "请过一会再试...");
+            return;
+        }
+
+        var user = await fsql.Select<UserEntity>().Where(a => a.Username == username).FirstAsync();
+        if (user == null || user.Password != password)
+        {
+            limit.AddOrUpdate(ip, ++count, (_, __) => count);
+            if (removeLimit.IsNull())
+                scheduler.AddTempTask(TimeSpan.FromSeconds(60), () => {
+                    removeLimit = null;
+                    limit.TryRemove(ip, out var _);
+                });
+            await JS.Error("登陆失败！", "用户名或密码不正确");
+            return;
+        }
+        nav.NavigateTo($"{AdminBlazorOptions.Global_BaseUrl}/Login?LoginToken={DesEncrypt.Encrypt(user.Id.ToString()).UrlEncode()}&Redirect={redirect.UrlEncode()}", true);
+    }
+
+    string removeLimit;
+    static ConcurrentDictionary<string, int> limit = new();
+
+    string redirect;
+    async protected override Task OnInitializedAsync()
+    {
+        var context = httpContextAccessor.HttpContext;
+        redirect = nav.GetQueryStringValue("Redirect").IsNull(AdminBlazorOptions.Global_BaseUrl);
+        var loginToken = nav.GetQueryStringValue("LoginToken");
+
+        if (!loginToken.IsNull())
+        {
+            var userId = DesEncrypt.Decrypt(loginToken).ConvertTo<long>();
+            var user = await fsql.Select<UserEntity>().Where(a => a.Id == userId).FirstAsync();
+            if (user != null)
+            {
+                user.LoginTime = DateTime.Now;
+                await fsql.Update<UserEntity>().Where(a => a.Id == userId).Set(a => a.LoginTime, user.LoginTime).ExecuteAffrowsAsync();
+                context.Response.Cookies.Append("login", DesEncrypt.Encrypt(user.Id.ToString() + "|" + user.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")), new CookieOptions
+                {
+                    Path = "/",
+                    Expires = remember ? DateTimeOffset.UtcNow.AddDays(15) : null
+                });
+                context.Response.Redirect(redirect);
+                return;
+            }
+        }
+
+        var logoutToken = nav.GetQueryStringValue("LogoutToken");
+        if (!logoutToken.IsNull())
+        {
+            var username = DesEncrypt.Decrypt(logoutToken);
+            if (!username.IsNull() && AdminLoginInfo.TryParseCookie(context.Request.Cookies["login"], out var userId, out var loginTime) && userId > 0)
+            {
+                var user = await fsql.Select<UserEntity>().Where(a => a.Id == userId).FirstAsync();
+                if (user != null && username == "logout$$" + user.Username)
+                {
+                    context.Response.Cookies.Delete("login");
+                    context.Response.Redirect(redirect);
+                    return;
+                }
+            }
+        }
+    }
+}

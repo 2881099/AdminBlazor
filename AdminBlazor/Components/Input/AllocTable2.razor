@@ -1,0 +1,141 @@
+﻿@namespace BootstrapBlazor.Components
+@typeparam TItem where TItem : class, new()
+@typeparam TChild where TChild : class, new()
+@using System.Collections
+@using FreeSql.Internal.Model
+
+<AdminModal Visible="Item != null" DialogClassName="modal-lg modal-height0" Title="@(Title.IsNull() ? "【分配】" : Title)" OnClose="OnClose">
+    @if (Item != null)
+    {
+        if (TableTd1 != null && TableRow != null)
+        {
+            <AdminTable2 TItem="TChild" PageSize="PageSize" Context="item2"
+                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false"
+                OnSelectChanged="AllocChanged" OnQuery="OnQuery">
+                <TableTh1>@TableTh1</TableTh1>
+                <TableTd1>@TableTd1(item2)</TableTd1>
+                <TableHeader>@TableHeader</TableHeader>
+                <TableRow>@TableRow?.Invoke(item2)</TableRow>
+            </AdminTable2>
+        }
+        else if (TableTd1 != null)
+        {
+            @* 只有 Td1 时生成一行四列的 Table *@
+            <AdminTable2 TItem="TChild" PageSize="PageSize" Context="item2"
+                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false"
+                OnSelectChanged="AllocChanged" OnQuery="OnQuery">
+                <TableTh1>@TableTh1</TableTh1>
+                <TableTd1>@TableTd1(item2)</TableTd1>
+            </AdminTable2>
+        }
+        else if (TableRow != null)
+        {
+            <AdminTable2 TItem="TChild" PageSize="PageSize" Context="item2"
+                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false"
+                OnSelectChanged="AllocChanged" OnQuery="OnQuery">
+                <TableHeader>@TableHeader</TableHeader>
+                <TableRow>@TableRow?.Invoke(item2)</TableRow>
+            </AdminTable2>
+        }
+
+        var selectedCount = allItems.Values.Where(a => a.Selected).Count();
+        <div class="modal-footer">
+            @if (selectedCount > 0)
+            {
+                <button @onclick="e => { foreach (var item in allItems.Values) item.Selected = false; }" type="button" class="ml-2 btn btn-light"><i class="far fa-square"></i> 重置</button>
+                <button @onclick="AllocFinish" type="button" class="ml-2 btn btn-success"><i class="fas fa-plus"></i> 确认选择 @selectedCount 项</button>
+            }
+            else
+            {
+                <button type="button" class="ml-2 btn btn-light disabled"><i class="far fa-square"></i> 重置</button>
+                <button type="button" class="ml-2 btn btn-success disabled"><i class="fas fa-plus"></i> 确认选择 @selectedCount 项</button>
+            }
+        </div>
+    }
+</AdminModal>
+
+@code {
+
+    [Parameter] public TItem Item { get; set; }
+    [Parameter] public string ChildProperty { get; set; }
+    [Parameter] public string Title { get; set; }
+    [Parameter] public EventCallback<TItem> ItemChanged { get; set; }
+
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public bool IsSearchText { get; set; } = true;
+
+    [Parameter] public RenderFragment? TableHeader { get; set; }
+    [Parameter] public RenderFragment<TChild>? TableRow { get; set; }
+    [Parameter] public RenderFragment? TableTh1 { get; set; }
+    [Parameter] public RenderFragment<TChild>? TableTd1 { get; set; }
+    [Parameter] public EventCallback<AdminQueryEventArgs<TChild>> OnQuery { get; set; }
+
+    [Inject] IAggregateRootRepository<TItem> repository { get; set; }
+
+    TableInfo metaTItem;
+    TableInfo metaTChild;
+    string GetTChildPrimaryValue(TChild child) => metaTChild.Primarys[0].GetValue(child).ConvertTo<string>() ?? "";
+    protected override void OnInitialized()
+    {
+        metaTItem = fsql.CodeFirst.GetTableByEntity(typeof(TItem));
+        if (metaTItem.Primarys.Length != 1) throw new ArgumentException("AllocTable2 要求使用类型必须使用单一主键");
+        metaTChild = fsql.CodeFirst.GetTableByEntity(typeof(TChild));
+        if (metaTItem.Primarys.Length != 1) throw new ArgumentException("AllocTable2 要求使用类型必须使用单一主键");
+    }
+    async protected override Task OnParametersSetAsync()
+    {
+        if (Item == null) return;
+        if (ChildProperty.IsNull()) return;
+        var childs = metaTItem.Properties[ChildProperty].GetValue(Item);
+        if (childs == null)
+        {
+            await new List<TItem> { Item }.IncludeByPropertyNameAsync(repository.Orm, ChildProperty);
+            repository.Attach(Item);
+            childs = metaTItem.Properties[ChildProperty].GetValue(Item);
+        }
+        if (childs is IEnumerable childsEnumerable)
+        {
+            foreach (var child in childsEnumerable)
+                if (child is TChild subi) allItems[GetTChildPrimaryValue(subi)] = new AdminItem<TChild>(subi) { Selected = true };
+        }
+        init = true;
+        if (currentItems != null) AllocChanged(currentItems);
+    }
+
+    bool init;
+    List<AdminItem<TChild>> currentItems;
+    Dictionary<string, AdminItem<TChild>> allItems = new();
+    void AllocChanged(List<AdminItem<TChild>> e)
+    {
+        if (currentItems != e || init)
+        {
+            if (currentItems != e) currentItems = e;
+            init = false;
+            currentItems.ForEach(a => 
+            {
+                var pkval = GetTChildPrimaryValue(a.Value);
+                a.Selected = allItems.TryGetValue(pkval, out var subi) && subi.Selected;
+                allItems[pkval] = a;
+            });
+            StateHasChanged();
+        }
+    }
+    async Task AllocFinish()
+    {
+        var childs = metaTItem.Properties[ChildProperty].GetValue(Item) as List<TChild>;
+        childs.Clear();
+        childs.AddRange(allItems.Values.Where(a => a.Selected).Select(a => a.Value));
+        await repository.UpdateAsync(Item);
+        await JS.Success("保存成功！");
+        await OnClose();
+    }
+
+    async Task OnClose()
+    {
+        currentItems?.Clear();
+        currentItems = null;
+        allItems.Clear();
+        Item = null;
+        if (ItemChanged.HasDelegate) await ItemChanged.InvokeAsync(null);
+    }
+}

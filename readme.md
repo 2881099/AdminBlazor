@@ -33,8 +33,6 @@ AdminBlazor 是一款 Blazor SSR 后台管理项目，支持 RABC 权限菜单/�
 
 用户名：admin 密码：freesql
 
-https://github.com/2881099/AdminBlazor/assets/16286519/e9ebec31-428d-402c-a384-de6123eeb1d6
-
 ## 4. 新建菜单，类型选择增删改查
 
 ![image](Images/01.png)

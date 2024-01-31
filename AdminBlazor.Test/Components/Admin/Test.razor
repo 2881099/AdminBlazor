@@ -13,16 +13,16 @@
                 OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
                 <TableHeader>
-                    <th>父级菜单</th>
-                    <th>名称</th>
-                    <th>图标</th>
-                    <th>路径</th>
+                    <th>ParentId</th>
+                    <th>Label</th>
+                    <th>Icon</th>
+                    <th>Path</th>
                     <th>PathLower</th>
-                    <th>新窗口打开</th>
-                    <th>排序</th>
-                    <th>类型</th>
+                    <th>TargetBlank</th>
+                    <th>Sort</th>
+                    <th>Type</th>
                 </TableHeader>
-                <TableTh1>名称</TableTh1>
+                <TableTh1>Label</TableTh1>
                 <TableTd1>@item.Label</TableTd1>
                 <TableRow>
                     <td>@item.ParentId</td>
@@ -37,19 +37,19 @@
                 <EditTemplate>
                     <div class="row">
                         <div class="form-group col-6">
-                            <label class="form-label">父级菜单</label>
+                            <label class="form-label">ParentId</label>
                             <SelectEntity TItem="MenuEntity" TKey="long" @bind-Value="item.ParentId" DisplayText="e => e.Label" />
                         </div>
                         <div class="form-group col-6">
-                            <label class="form-label">名称</label>
+                            <label class="form-label">Label</label>
                             <input @bind="item.Label" type="text" class="form-control" placeholder="" maxlength="255">
                         </div>
                         <div class="form-group col-6">
-                            <label class="form-label">图标</label>
+                            <label class="form-label">Icon</label>
                             <input @bind="item.Icon" type="text" class="form-control" placeholder="" maxlength="255">
                         </div>
                         <div class="form-group col-6">
-                            <label class="form-label">路径</label>
+                            <label class="form-label">Path</label>
                             <input @bind="item.Path" type="text" class="form-control" placeholder="" maxlength="255">
                         </div>
                         <div class="form-group col-6">
@@ -57,19 +57,19 @@
                             <input @bind="item.PathLower" type="text" class="form-control" placeholder="" maxlength="255">
                         </div>
                         <div class="form-group col-6">
-                            <label class="form-label">新窗口打开</label>
+                            <label class="form-label">TargetBlank</label>
                             <Switch @bind-Value="item.TargetBlank" OnColor="Color.Success" />
                         </div>
                         <div class="form-group col-6">
-                            <label class="form-label">排序</label>
+                            <label class="form-label">Sort</label>
                             <input @bind="item.Sort" type="number" class="form-control" placeholder="">
                         </div>
                         <div class="form-group col-6">
-                            <label class="form-label">类型</label>
+                            <label class="form-label">Type</label>
                             <SelectEnum TEnum="MenuEntityType" @bind-Value="item.Type" />
                         </div>
                         <div class="form-group col-12">
-                            <label class="form-label">角色</label>
+                            <label class="form-label">Roles</label>
                             <SelectTable2 TItem="RoleEntity" TKey="long" @bind-Items="item.Roles" IsSearchText="false" PageSize="-1">
                                 <TableTd1>@context.Name</TableTd1>
                             </SelectTable2>
@@ -90,8 +90,8 @@
         var allRoles = await fsql.Select<RoleEntity>().ToListAsync();
         e.Filters = new AdminFilterInfo[]
         {
-            new AdminFilterInfo("类型", "Type", "菜单,按钮,外部连接,增删改查", "0,1,2,3"),
-            new AdminFilterInfo("角色", "Roles", true, 12, 
+            new AdminFilterInfo("Type", "Type", "菜单,按钮,外部连接,增删改查", "0,1,2,3"),
+            new AdminFilterInfo("Roles", "Roles", true, 12, 
                 string.Join(",", allRoles.Select(a => a.Name)), 
                 string.Join(",", allRoles.Select(a => a.Id))),
         };

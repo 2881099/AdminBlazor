@@ -37,11 +37,11 @@ https://github.com/2881099/AdminBlazor/assets/16286519/e9ebec31-428d-402c-a384-d
 
 ## 4. 新建菜单，类型选择增删改查
 
-![image](https://github.com/2881099/AdminBlazor/assets/16286519/ab9a60f1-5fae-4722-9cd8-e4acce65bb10)
+![image](Images/01.png)
 
 ## 5. 生成代码
 
-![image](https://github.com/2881099/AdminBlazor/assets/16286519/c65ffdd0-2755-42e5-8e0b-209c6acaff90)
+![image](Images/02.png)
 
 # 权限
 
@@ -75,7 +75,7 @@ void ButtonClick()
 
 之后菜单管理，会出现对应的按钮项，勾选设置角色是否有按钮的权限。
 
-![image](https://github.com/2881099/AdminBlazor/assets/16286519/942ecd53-4f0e-421a-9d0c-0a27eb30d537)
+![image](Images/03.png)
 
 # 组件
 

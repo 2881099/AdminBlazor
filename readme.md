@@ -2,20 +2,9 @@
 
 AdminBlazor 是一款 Blazor SSR 后台管理项目，支持 RABC 权限菜单/按钮，支持一对一、一对多、多对多代码生成 .razor 界面。
 
-### 集成功能
+集成功能：菜单管理、角色管理、用户管理、定时任务、字典管理
 
-- 菜单管理
-- 角色管理
-- 用户管理
-- 定时任务
-- 字典管理
-
-### 依赖组件
-
-- BootstrapBlazor
-- FreeSql
-- FreeScheduler
-- Rougamo
+依赖组件：BootstrapBlazor、FreeSql、FreeScheduler、Rougamo
 
 ## 快速开始
 

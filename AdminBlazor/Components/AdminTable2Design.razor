@@ -777,7 +777,7 @@
             TypeName = GetClassName(a.CsType),
             EnumValues = a.CsType.NullableTypeOrThis().IsEnum ? 
                 Enum.GetNames(a.CsType.NullableTypeOrThis()).Select(b => 
-                    new KeyValuePair<string, long>(b, (long)Enum.Parse(a.CsType.NullableTypeOrThis(), b))).ToDictionary(b => b.Key, b => b.Value) : new(),
+                    new KeyValuePair<string, long>(b, Enum.Parse(a.CsType.NullableTypeOrThis(), b).ConvertTo<long>())).ToDictionary(b => b.Key, b => b.Value) : new(),
             MapTypeName = GetClassName(a.Attribute.MapType),
             CsName = a.CsName,
             Comment = a.Comment,

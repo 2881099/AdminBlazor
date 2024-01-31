@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{6291529C-3
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminBlazor.Template", "AdminBlazor.Template\AdminBlazor.Template.csproj", "{47999FD2-711D-48CB-A6F9-EF10EFEDC218}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminBlazor.Test", "AdminBlazor.Test\AdminBlazor.Test.csproj", "{778945BC-94FF-41CB-974C-97349130FA7B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{47999FD2-711D-48CB-A6F9-EF10EFEDC218}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{47999FD2-711D-48CB-A6F9-EF10EFEDC218}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{47999FD2-711D-48CB-A6F9-EF10EFEDC218}.Release|Any CPU.Build.0 = Release|Any CPU
+		{778945BC-94FF-41CB-974C-97349130FA7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{778945BC-94FF-41CB-974C-97349130FA7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{778945BC-94FF-41CB-974C-97349130FA7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{778945BC-94FF-41CB-974C-97349130FA7B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,116 @@
+@page "/Admin/Test"
+@using BootstrapBlazor.Components
+@using System
+
+<PageTitle>测试</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <AdminTable2 TItem="MenuEntity" Context="item" PageSize="-1" Title="测试"DialogClassName="modal-lg"
+                IsSearchText="false"
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+                <TableHeader>
+                    <th>父级菜单</th>
+                    <th>名称</th>
+                    <th>图标</th>
+                    <th>路径</th>
+                    <th>PathLower</th>
+                    <th>新窗口打开</th>
+                    <th>排序</th>
+                    <th>类型</th>
+                </TableHeader>
+                <TableTh1>名称</TableTh1>
+                <TableTd1>@item.Label</TableTd1>
+                <TableRow>
+                    <td>@item.ParentId</td>
+                    <td>@item.Label</td>
+                    <td>@item.Icon</td>
+                    <td>@item.Path</td>
+                    <td>@item.PathLower</td>
+                    <td>@item.TargetBlank</td>
+                    <td>@item.Sort</td>
+                    <td>@item.Type</td>
+                </TableRow>
+                <EditTemplate>
+                    <div class="row">
+                        <div class="form-group col-6">
+                            <label class="form-label">父级菜单</label>
+                            <SelectEntity TItem="MenuEntity" TKey="long" @bind-Value="item.ParentId" DisplayText="e => e.Label" />
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">名称</label>
+                            <input @bind="item.Label" type="text" class="form-control" placeholder="" maxlength="255">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">图标</label>
+                            <input @bind="item.Icon" type="text" class="form-control" placeholder="" maxlength="255">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">路径</label>
+                            <input @bind="item.Path" type="text" class="form-control" placeholder="" maxlength="255">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">PathLower</label>
+                            <input @bind="item.PathLower" type="text" class="form-control" placeholder="" maxlength="255">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">新窗口打开</label>
+                            <Switch @bind-Value="item.TargetBlank" OnColor="Color.Success" />
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">排序</label>
+                            <input @bind="item.Sort" type="number" class="form-control" placeholder="">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">类型</label>
+                            <SelectEnum TEnum="MenuEntityType" @bind-Value="item.Type" />
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">角色</label>
+                            <SelectTable2 TItem="RoleEntity" TKey="long" @bind-Items="item.Roles" IsSearchText="false" PageSize="-1">
+                                <TableTd1>@context.Name</TableTd1>
+                            </SelectTable2>
+                        </div>
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Inject] IAggregateRootRepository<MenuEntity> repository { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        var allRoles = await fsql.Select<RoleEntity>().ToListAsync();
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("类型", "Type", "菜单,按钮,外部连接,增删改查", "0,1,2,3"),
+            new AdminFilterInfo("角色", "Roles", true, 12, 
+                string.Join(",", allRoles.Select(a => a.Name)), 
+                string.Join(",", allRoles.Select(a => a.Id))),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<MenuEntity> e)
+    {
+        e.Select.WhereIf(e.Filters[0].HasValue, a => a.Type == e.Filters[0].Value<MenuEntityType>())
+            .WhereIf(e.Filters[1].HasValue, a => a.Roles.Any(b => e.Filters[1].Values<long>().Contains(b.Id)));
+    }
+
+    async Task OnEdit(MenuEntity item)
+    {
+        if (item.Roles == null)
+        {
+            if (item.Id == default) item.Roles = new();
+            else await new List<MenuEntity> { item }.IncludeManyAsync(repository.Orm, a => a.Roles);
+            repository.Attach(item);
+        }
+        await Task.Yield();
+    }
+}

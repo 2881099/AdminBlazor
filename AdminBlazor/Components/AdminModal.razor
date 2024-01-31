@@ -22,8 +22,8 @@
             @if (OnYes.HasDelegate)
             {
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="Hide">@NoTitle</button>
-                    <button type="button" class="btn btn-primary" @onclick="YesClick">@YesTitle</button>
+                    <button type="button" class="btn btn-secondary" @onclick="Hide">@CloseButton</button>
+                    <button type="button" class="btn btn-primary" @onclick="YesClick">@YesButton</button>
                 </div>
             }
         </div>
@@ -53,8 +53,8 @@
     }
 
     [Parameter] public string Title { get; set; } = "标题";
-    [Parameter] public string YesTitle { get; set; } = "保存";
-    [Parameter] public string NoTitle { get; set; } = "取消";
+    [Parameter] public string YesButton { get; set; } = "保存";
+    [Parameter] public string CloseButton { get; set; } = "取消";
     [Parameter] public string DialogClassName { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
 

@@ -71,7 +71,7 @@
                         <div class="form-group col-12">
                             <label class="form-label">Roles</label>
                             <SelectTable2 TItem="RoleEntity" TKey="long" @bind-Items="item.Roles" IsSearchText="false" PageSize="-1">
-                                <TableTd1>@context.Name</TableTd1>
+                                @context.Name
                             </SelectTable2>
                         </div>
                     </div>

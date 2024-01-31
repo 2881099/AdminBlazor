@@ -6,8 +6,7 @@
 <AdminTable2 TItem="TItem" PageSize="PageSize" Context="item"
     IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsSingleSelect="ValueChanged.HasDelegate"
     OnSelectChanged="OnSelectChanged" OnQuery="OnQuery">
-    <TableTh1>@TableTh1</TableTh1>
-    <TableTd1>@TableTd1(item)</TableTd1>
+    <TableTd1>@ChildContent(item)</TableTd1>
 </AdminTable2>
 
 @code {
@@ -19,8 +18,7 @@
     [Parameter] public int PageSize { get; set; } = 20;
     [Parameter] public bool IsSearchText { get; set; } = true;
 
-    [Parameter] public RenderFragment? TableTh1 { get; set; }
-    [Parameter] public RenderFragment<TItem>? TableTd1 { get; set; }
+    [Parameter] public RenderFragment<TItem>? ChildContent { get; set; }
     [Parameter] public EventCallback<AdminQueryEventArgs<TItem>> OnQuery { get; set; }
 
     TableInfo metaTItem;

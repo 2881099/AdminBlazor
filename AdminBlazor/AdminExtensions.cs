@@ -81,257 +81,43 @@ public static class AdminExtensions
             #region 初始化数据
             if (fsql.Select<MenuEntity>().Any() == false)
             {
-                var repo = fsql.GetRepository<MenuEntity>();
-                repo.DbContextOptions.EnableCascadeSave = true;
+                List<MenuEntity> getCudButtons(params MenuEntity[] btns) => new[]
+                {
+                    new MenuEntity { Label = "添加", Path = "add", Sort = 10011, Type = MenuEntityType.按钮, },
+                    new MenuEntity { Label = "编辑", Path = "edit", Sort = 10012, Type = MenuEntityType.按钮, },
+                    new MenuEntity { Label = "删除", Path = "remove", Sort = 10013, Type = MenuEntityType.按钮, }
+                }.Concat(btns ?? new MenuEntity[0]).ToList();
+                var repo = fsql.GetAggregateRootRepository<MenuEntity>();
                 repo.Insert(new[]
                 {
                     new MenuEntity
                     {
-                        Label = "通用管理",
-                        ParentId = 0,
-                        Path = "",
-                        Sort = 999,
-                        TargetBlank = false,
-                        Icon = "",
-                        Type = MenuEntityType.菜单,
-                        Childs = new List<MenuEntity>
-                        {
-                            new MenuEntity
-                            {
-                                Label = "测试",
-                                Path = "Admin/Test",
-                                Sort = 10001,
-                                TargetBlank = false,
-                                Icon = "",
-                                Type = MenuEntityType.增删改查
-                            },
-                        }
-                    },
-                    new MenuEntity
-                    {
                         Label = "系统管理",
-                        ParentId = 0,
                         Path = "",
                         Sort = 1000,
-                        TargetBlank = false,
-                        Icon = "",
                         Type = MenuEntityType.菜单,
                         Childs = new List<MenuEntity>
                         {
-                            new MenuEntity
-                            {
-                                Label = "菜单管理",
-                                Path = "Admin/Menu",
-                                Sort = 10001,
-                                TargetBlank = false,
-                                Icon = "",
-                                Type = MenuEntityType.菜单,
-                                Childs = new List<MenuEntity>
+                            new MenuEntity { Label = "菜单管理", Path = "Admin/Menu", Sort = 10001, Type = MenuEntityType.菜单, Childs = getCudButtons() },
+                            new MenuEntity { Label = "角色管理", Path = "Admin/Role", Sort = 10002, Type = MenuEntityType.菜单, Childs = getCudButtons(
+                                new MenuEntity { Label = "分配用户", Path = "alloc_users", Sort = 10014, Type = MenuEntityType.按钮, },
+                                new MenuEntity { Label = "分配菜单", Path = "alloc_menus", Sort = 10015, Type = MenuEntityType.按钮, })
+                            },
+                            new MenuEntity { Label = "用户管理", Path = "Admin/User", Sort = 10003, Type = MenuEntityType.菜单, Childs = getCudButtons(
+                                new MenuEntity { Label = "分配角色", Path = "alloc_roles", Sort = 10014, Type = MenuEntityType.按钮, })
+                            },
+                            new MenuEntity { Label = "定时任务", Path = "Admin/TaskScheduler", Sort = 10004, Type = MenuEntityType.菜单, Childs = new List<MenuEntity>
                                 {
-                                    new MenuEntity
-                                    {
-                                        Label = "添加",
-                                        Path = "add",
-                                        Sort = 10011,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "编辑",
-                                        Path = "edit",
-                                        Sort = 10012,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "删除",
-                                        Path = "remove",
-                                        Sort = 10013,
-                                        Type = MenuEntityType.按钮,
-                                    }
+                                    new MenuEntity { Label = "添加", Path = "add", Sort = 10011, Type = MenuEntityType.按钮, },
+                                    new MenuEntity { Label = "删除", Path = "remove", Sort = 10013, Type = MenuEntityType.按钮, },
+                                    new MenuEntity { Label = "暂停", Path = "pause", Sort = 10014, Type = MenuEntityType.按钮, },
+                                    new MenuEntity { Label = "恢复", Path = "resume", Sort = 10015, Type = MenuEntityType.按钮, },
+                                    new MenuEntity { Label = "立即触发", Path = "runnow", Sort = 10016, Type = MenuEntityType.按钮, },
+                                    new MenuEntity { Label = "查看日志", Path = "tasklog", Sort = 10017, Type = MenuEntityType.按钮, },
+                                    new MenuEntity { Label = "集群日志", Path = "clusterlog", Sort = 10018, Type = MenuEntityType.按钮, },
                                 }
                             },
-                            new MenuEntity
-                            {
-                                Label = "角色管理",
-                                Path = "Admin/Role",
-                                Sort = 10002,
-                                TargetBlank = false,
-                                Icon = "",
-                                Type = MenuEntityType.菜单,
-                                Childs = new List<MenuEntity>
-                                {
-                                    new MenuEntity
-                                    {
-                                        Label = "添加",
-                                        Path = "add",
-                                        Sort = 10011,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "编辑",
-                                        Path = "edit",
-                                        Sort = 10012,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "删除",
-                                        Path = "remove",
-                                        Sort = 10013,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "分配用户",
-                                        Path = "alloc_users",
-                                        Sort = 10014,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "分配菜单",
-                                        Path = "alloc_menus",
-                                        Sort = 10015,
-                                        Type = MenuEntityType.按钮,
-                                    }
-                                }
-                            },
-                            new MenuEntity
-                            {
-                                Label = "用户管理",
-                                Path = "Admin/User",
-                                Sort = 10003,
-                                TargetBlank = false,
-                                Icon = "",
-                                Type = MenuEntityType.菜单,
-                                Childs = new List<MenuEntity>
-                                {
-                                    new MenuEntity
-                                    {
-                                        Label = "添加",
-                                        Path = "add",
-                                        Sort = 10011,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "编辑",
-                                        Path = "edit",
-                                        Sort = 10012,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "删除",
-                                        Path = "remove",
-                                        Sort = 10013,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "分配角色",
-                                        Path = "alloc_roles",
-                                        Sort = 10014,
-                                        Type = MenuEntityType.按钮,
-                                    }
-                                }
-                            },
-                            new MenuEntity
-                            {
-                                Label = "定时任务",
-                                Path = "Admin/TaskScheduler",
-                                Sort = 10004,
-                                TargetBlank = false,
-                                Icon = "",
-                                Type = MenuEntityType.菜单,
-                                Childs = new List<MenuEntity>
-                                {
-                                    new MenuEntity
-                                    {
-                                        Label = "添加",
-                                        Path = "add",
-                                        Sort = 10011,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "删除",
-                                        Path = "remove",
-                                        Sort = 10013,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "暂停",
-                                        Path = "pause",
-                                        Sort = 10014,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "恢复",
-                                        Path = "resume",
-                                        Sort = 10015,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "立即触发",
-                                        Path = "runnow",
-                                        Sort = 10016,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "查看日志",
-                                        Path = "tasklog",
-                                        Sort = 10017,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "集群日志",
-                                        Path = "clusterlog",
-                                        Sort = 10018,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                }
-                            },
-                            new MenuEntity
-                            {
-                                Label = "数据字典",
-                                Path = "Admin/Dict",
-                                Sort = 10005,
-                                TargetBlank = false,
-                                Icon = "",
-                                Type = MenuEntityType.菜单,
-                                Childs = new List<MenuEntity>
-                                {
-                                    new MenuEntity
-                                    {
-                                        Label = "添加",
-                                        Path = "add",
-                                        Sort = 10011,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "编辑",
-                                        Path = "edit",
-                                        Sort = 10012,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                    new MenuEntity
-                                    {
-                                        Label = "删除",
-                                        Path = "remove",
-                                        Sort = 10013,
-                                        Type = MenuEntityType.按钮,
-                                    },
-                                }
-                            },
+                            new MenuEntity { Label = "数据字典", Path = "Admin/Dict", Sort = 10005, Type = MenuEntityType.菜单,Childs = getCudButtons() },
                         }
                     },
                 });

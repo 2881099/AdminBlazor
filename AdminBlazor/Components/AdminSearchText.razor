@@ -1,7 +1,7 @@
 ﻿@namespace BootstrapBlazor.Components
 
 <div class="input-group input-group-sm">
-    <input @bind="_value" @onkeyup="KeyHandler" @onkeyup:preventDefault type="text" class="form-control" placeholder="Search">
+    <input @bind="_value" @onkeyup="KeyHandler" @onkeyup:preventDefault type="text" class="form-control form-control-sm" placeholder="Search">
     <span @onclick="SearchClick" class="btn btn-primary">
         <i class="fas fa-search"></i>
     </span>

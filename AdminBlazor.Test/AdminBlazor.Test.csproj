@@ -10,9 +10,9 @@
 	
 	<ItemGroup>
 		<!--<PackageReference Include="AdminBlazor" Version="1.0.6" />-->
-		<PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.811" />
+		<PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.812" />
 		<PackageReference Include="Rougamo.Fody" Version="2.2.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.19" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.1" />
 	</ItemGroup>
 	
 	<ItemGroup>

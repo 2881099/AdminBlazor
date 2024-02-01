@@ -184,7 +184,7 @@ partial class AdminTable2Design
             a.Attribute.IsIdentity ||
             a.Attribute.IsVersion) cd.CanEdit = false;
 
-        cd.IsDisplay = cd.CanEdit;
+        cd.IsDisplay = cd.CanEdit || new[] { nameof(IEntityCreated.CreatedTime) }.Contains(cd.Column.CsName);
         cd.IsSearchText = cd.CanSearchText;
         if (!cd.IsSearchText) cd.CanSearchTextTips = design.TreeNav.Key.IsNull() ? "非 string 类型无法设置" : "树型分类 暂不支持文本搜索";
         if (cd.Column.CsType.NullableTypeOrThis().IsEnum) cd.IsSearchFilterEnum = true;
@@ -289,7 +289,13 @@ partial class AdminTable2Design
         var basePath = AppContext.BaseDirectory.Replace("\\", "/").TrimEnd('/');
         var bin_debug = basePath.IndexOf("/bin/Debug/");
         if (bin_debug != -1) basePath = basePath.Substring(0, bin_debug);
-        var savePath = basePath + "/Components/" + Menu.Path.Trim('/') + ".razor";
+        var menuPath = Menu.Path.Trim('/');
+        if (menuPath.EndsWith($"/{GetClassName(design.TableDescrptor.Type)}"))
+        {
+            var lastIndex = menuPath.LastIndexOf("/");
+            menuPath = menuPath.Substring(0, menuPath.LastIndexOf("/")) + "/_" + menuPath.Substring(lastIndex + 1);
+        }
+        var savePath = basePath + "/Components/" + menuPath + ".razor";
         var savePaths = savePath.Split('/');
         savePaths[savePaths.Length - 1] = savePaths[savePaths.Length - 1][0].ToString().ToUpper() + savePaths[savePaths.Length - 1].Substring(1);
         savePath = string.Join("/", savePaths);

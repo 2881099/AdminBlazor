@@ -7,6 +7,11 @@ namespace BootstrapBlazor.Components
     /// </summary>
     public partial class MenuEntity : EntityCreated
     {
+        [Navigate(nameof(ParentId))]
+        public MenuEntity Parent { get; set; }
+        [Navigate(nameof(ParentId))]
+        public List<MenuEntity> Childs { get; set; }
+
         /// <summary>
         /// 父级菜单
         /// </summary>
@@ -36,11 +41,6 @@ namespace BootstrapBlazor.Components
         /// 类型
         /// </summary>
         public MenuEntityType Type { get; set; }
-
-        [Navigate(nameof(ParentId))]
-        public MenuEntity Parent { get; set; }
-        [Navigate(nameof(ParentId))]
-        public List<MenuEntity> Childs { get; set; }
     }
 }
 

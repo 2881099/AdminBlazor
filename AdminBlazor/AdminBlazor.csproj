@@ -14,7 +14,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageTags>Blazor;Admin;RABC;Generator</PackageTags>
-		<Version>1.0.6</Version>
+		<Version>1.0.8</Version>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
 	</PropertyGroup>
 
@@ -26,7 +26,7 @@
 		<PackageReference Include="BootstrapBlazor" Version="8.1.7" />
 		<PackageReference Include="BootstrapBlazor.FontAwesome" Version="8.0.1" />
 		<PackageReference Include="FreeScheduler" Version="2.0.28" />
-		<PackageReference Include="FreeSql.Extensions.AggregateRoot" Version="3.2.811" />
+		<PackageReference Include="FreeSql.Extensions.AggregateRoot" Version="3.2.812" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
 		<PackageReference Include="NCrontab" Version="3.3.3" />

@@ -1,0 +1,111 @@
+@page "/Blog/Tag2"
+@using LinCms.Entities.Blog
+@using System
+
+<PageTitle>标签</PageTitle>
+
+<blockquote class="quote-info m-3 p-0 pl-2"><h5>提示：这个页面使用 AdminBlazor 生成器的示例。【菜单管理】->【增删改查】</h5></blockquote>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <AdminTable2 TItem="Tag2" Context="item" PageSize="20" Title="标签" DialogClassName="modal-lg"
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+                <TableHeader>
+                    <th>标签名</th>
+                    <th>别名</th>
+                    <th>封面图</th>
+                    <th>标签状态</th>
+                    <th>随笔数量</th>
+                    <th>浏览次数</th>
+                    <th>备注</th>
+                    <th>创建时间</th>
+                </TableHeader>
+                <TableRow>
+                    <td>@item.TagName</td>
+                    <td>@item.Alias</td>
+                    <td>@item.Thumbnail</td>
+                    <td>@item.Status</td>
+                    <td>@item.ArticleCount</td>
+                    <td>@item.ViewHits</td>
+                    <td>@item.Remark</td>
+                    <td>@item?.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </TableRow>
+                <EditTemplate>
+                    <div class="row form-inline form-inline-end">
+                        <div class="form-group col-6">
+                            <label class="form-label">标签名</label>
+                            <input @bind="item.TagName" type="text" class="form-control" placeholder="" maxlength="50">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">别名</label>
+                            <input @bind="item.Alias" type="text" class="form-control" placeholder="" maxlength="200">
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">封面图</label>
+                            <input @bind="item.Thumbnail" type="text" class="form-control" placeholder="" maxlength="100">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">标签状态</label>
+                            <Switch @bind-Value="item.Status" OnColor="Color.Success" />
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">随笔数量</label>
+                            <input @bind="item.ArticleCount" type="number" class="form-control" placeholder="">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">浏览次数</label>
+                            <input @bind="item.ViewHits" type="number" class="form-control" placeholder="">
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">备注</label>
+                            <textarea @bind="item.Remark" class="form-control" placeholder="" maxlength="500"></textarea>
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">技术频道</label>
+                            <SelectTable2 TItem="Channel" TKey="long" @bind-Items="item.Channels" IsSearchText="false" PageSize="-1">
+                                @context.ChannelName
+                            </SelectTable2>
+                        </div>
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Inject] IAggregateRootRepository<Tag2> repository { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        var allChannels = await fsql.Select<Channel>().ToListAsync();
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("技术频道", "Channels", true, 12, 
+                string.Join(",", allChannels.Select(a => a.ChannelName)), 
+                string.Join(",", allChannels.Select(a => a.Id))),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<Tag2> e)
+    {
+        e.Select.WhereIf(e.Filters[0].HasValue, a => a.Channels.Any(b => e.Filters[0].Values<long>().Contains(b.Id)))
+            .WhereIf(!e.SearchText.IsNull(), a => a.TagName.Contains(e.SearchText) || 
+                a.Alias.Contains(e.SearchText));
+    }
+
+    async Task OnEdit(Tag2 item)
+    {
+        if (item.Channels == null)
+        {
+            if (item.Id == default) item.Channels = new();
+            else await new List<Tag2> { item }.IncludeManyAsync(repository.Orm, a => a.Channels);
+            repository.Attach(item);
+        }
+        await Task.Yield();
+    }
+}

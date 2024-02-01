@@ -1,0 +1,99 @@
+@page "/Blog/UserLike"
+@using LinCms.Entities.Blog
+
+<PageTitle>用户点赞</PageTitle>
+
+<blockquote class="quote-info m-3 p-0 pl-2"><h5>提示：这个页面使用 AdminBlazor 生成器的示例。【菜单管理】->【增删改查】</h5></blockquote>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <AdminTable2 TItem="UserLike" Context="item" PageSize="20" Title="用户点赞"DialogClassName="modal-lg"
+                IsSearchText="false"
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+                <TableHeader>
+                    <th>点赞对象</th>
+                    <th>点赞类型</th>
+                    <th>创建时间</th>
+                </TableHeader>
+                <TableRow>
+                    <td>
+                        @if (item.SubjectType == UserLikeSubjectType.点赞随笔)
+                        {
+                            <span>[@item.SubjectId]@item.Article?.Title</span>
+                        }
+                        else
+                        {
+                            <span>[@item.SubjectId]@item.Comment?.Text</span>
+                        }
+                    </td>
+                    <td>@item.SubjectType</td>
+                    <td>@item?.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </TableRow>
+                <EditTemplate>
+                    <div class="row form-inline form-inline-end">
+                        <div class="form-group col-12">
+                            <label class="form-label">类型</label>
+                            <SelectEnum TEnum="UserLikeSubjectType" @bind-Value="item.SubjectType" />
+                        </div>
+                        @if (item.SubjectType == UserLikeSubjectType.点赞随笔)
+                        {
+                            <div class="form-group col-12">
+                                <label class="form-label">随笔</label>
+                                <InputTable2 TItem="Article" TKey="long" @bind-Value="item.SubjectId" @bind-Item="item.Article" DisplayText="@(a => $"[{a.Id}]{a.Title}")" Context="item2">
+                                    <TableTh1>标题</TableTh1>
+                                    <TableTd1>@item2.Title</TableTd1>
+                                    <TableHeader>
+                                    </TableHeader>
+                                    <TableRow>
+                                    </TableRow>
+                                </InputTable2>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="form-group col-12">
+                                <label class="form-label">评论</label>
+                                <InputTable2 TItem="Comment" TKey="long" @bind-Value="item.SubjectId" @bind-Item="item.Comment" DisplayText="@(a => $"[{a.Id}]{a.Text}")" Context="item2">
+                                    <TableTh1>评论内容</TableTh1>
+                                    <TableTd1>@item2.Text</TableTd1>
+                                    <TableHeader>
+                                    </TableHeader>
+                                    <TableRow>
+                                    </TableRow>
+                                </InputTable2>
+                            </div>
+                        }
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Inject] IAggregateRootRepository<UserLike> repository { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("点赞类型", "SubjectType", "点赞随笔,点赞评论", "1,2"),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<UserLike> e)
+    {
+        e.Select.Include(a => a.Article)
+            .Include(a => a.Comment)
+            .WhereIf(e.Filters[0].HasValue, a => a.SubjectType == e.Filters[0].Value<UserLikeSubjectType>());
+    }
+
+    async Task OnEdit(UserLike item)
+    {
+        await Task.Yield();
+    }
+}

@@ -1,0 +1,82 @@
+@page "/Blog/Comment"
+@using LinCms.Entities.Blog
+
+<PageTitle>评论</PageTitle>
+
+<blockquote class="quote-info m-3 p-0 pl-2"><h5>提示：这个页面使用 AdminBlazor 生成器的示例。【菜单管理】->【增删改查】</h5></blockquote>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <AdminTable2 TItem="Comment" Context="item" PageSize="20" Title="评论"DialogClassName="modal-xl"
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+                <TableHeader>
+                    <th>关联随笔</th>
+                    <th>内容</th>
+                    <th>点赞量</th>
+                    <th>是否已审核</th>
+                    <th>创建时间</th>
+                </TableHeader>
+                <TableRow>
+                    <td>[@item.ArticleId]@item.Article?.Title</td>
+                    <td>@item.Text</td>
+                    <td>@item.LikesQuantity</td>
+                    <td>@item.IsAudit</td>
+                    <td>@item?.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </TableRow>
+                <EditTemplate>
+                    <div class="row form-inline form-inline-end">
+                        <div class="form-group col-6">
+                            <label class="form-label">关联随笔</label>
+                            <InputTable2 TItem="Article" TKey="long" @bind-Value="item.ArticleId" @bind-Item="item.Article" DisplayText="@(a => $"[{a.Id}]{a.Title}")" Context="item2">
+                                <TableTh1>标题</TableTh1>
+                                <TableTd1>@item2.Title</TableTd1>
+                                <TableHeader>
+                                </TableHeader>
+                                <TableRow>
+                                </TableRow>
+                            </InputTable2>
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">内容</label>
+                            <textarea @bind="item.Text" class="form-control" placeholder="" maxlength="500"></textarea>
+                        </div>
+                        <div class="form-group col-4">
+                            <label class="form-label">点赞量</label>
+                            <input @bind="item.LikesQuantity" type="number" class="form-control" placeholder="">
+                        </div>
+                        <div class="form-group col-4">
+                            <label class="form-label">是否已审核</label>
+                            <Switch @bind-Value="item.IsAudit" OnColor="Color.Success" />
+                        </div>
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Inject] IAggregateRootRepository<Comment> repository { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<Comment> e)
+    {
+        e.Select.Include(a => a.Article)
+            .WhereIf(!e.SearchText.IsNull(), a => a.Text.Contains(e.SearchText));
+    }
+
+    async Task OnEdit(Comment item)
+    {
+        await Task.Yield();
+    }
+}

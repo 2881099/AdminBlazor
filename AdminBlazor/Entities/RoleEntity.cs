@@ -1,4 +1,5 @@
-﻿using FreeSql.DataAnnotations;
+﻿using BootstrapBlazor.Components;
+using FreeSql.DataAnnotations;
 
 namespace BootstrapBlazor.Components
 {
@@ -27,21 +28,12 @@ namespace BootstrapBlazor.Components
         public List<MenuEntity> Menus { get; set; }
     }
 
-    partial class UserEntity
-    {
-        [Navigate(ManyToMany = typeof(RoleUserEntity))]
-        public List<RoleEntity> Roles { get; set; }
-        [Navigate(nameof(RoleUserEntity.UserId))]
-        public List<RoleUserEntity> RoleUsers { get; set; }
-    }
     public class RoleUserEntity
     {
         public long RoleId { get; set; }
         public long UserId { get; set; }
 
-        [Navigate(nameof(RoleId))]
         public RoleEntity Role { get; set; }
-        [Navigate(nameof(UserId))]
         public UserEntity User { get; set; }
     }
 
@@ -57,9 +49,15 @@ namespace BootstrapBlazor.Components
         public long RoleId { get; set; }
         public long MenuId { get; set; }
 
-        [Navigate(nameof(RoleId))]
         public RoleEntity Role { get; set; }
-        [Navigate(nameof(MenuId))]
         public MenuEntity Menu { get; set; }
     }
+}
+
+partial class UserEntity
+{
+    [Navigate(ManyToMany = typeof(RoleUserEntity))]
+    public List<RoleEntity> Roles { get; set; }
+    [Navigate(nameof(RoleUserEntity.UserId))]
+    public List<RoleUserEntity> RoleUsers { get; set; }
 }

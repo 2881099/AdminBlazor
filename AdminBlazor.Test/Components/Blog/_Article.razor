@@ -1,0 +1,224 @@
+@page "/Blog/Article"
+@using LinCms.Entities.Blog
+@using System
+
+<PageTitle>随笔文章</PageTitle>
+
+<blockquote class="quote-info m-3 p-0 pl-2"><h5>提示：这个页面使用 AdminBlazor 生成器的示例。【菜单管理】->【增删改查】</h5></blockquote>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <AdminTable2 TItem="Article" Context="item" PageSize="20" Title="随笔文章"DialogClassName="modal-xxl"
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+                <TableHeader>
+                    <th>随笔专栏</th>
+                    <th>技术频道</th>
+                    <th>标题</th>
+                    <th>浏览量</th>
+                    <th>评论数量</th>
+                    <th>点赞数量</th>
+                    <th>收藏数量</th>
+                    <th>随笔类型</th>
+                    <th>创建时间</th>
+                </TableHeader>
+                <TableRow>
+                    <td>@item.Classify?.ClassifyName</td>
+                    <td>@item.Channel?.ChannelName</td>
+                    <td>@item.Title</td>
+                    <td>@item.ViewHits</td>
+                    <td>@item.CommentQuantity</td>
+                    <td>@item.LikesQuantity</td>
+                    <td>@item.CollectQuantity</td>
+                    <td>@item.ArticleType</td>
+                    <td>@item?.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </TableRow>
+                <EditTemplate>
+                    <div class="card card-light card-tabs">
+                        <div class="card-header p-0 pt-1">
+                            <ul class="nav nav-tabs">
+                                <li class="nav-item"><a @onclick="e => tabindex = 0" class="nav-link @(tabindex == 0 ? "active" : "")" style="cursor:pointer">随笔</a></li>
+                                <li class="nav-item"><a @onclick="e => tabindex = 1" class="nav-link @(tabindex == 1 ? "active" : "")" style="cursor:pointer">设置</a></li>
+                                <li class="nav-item"><a @onclick="e => tabindex = 2" class="nav-link @(tabindex == 1 ? "active" : "")" style="cursor:pointer">收藏集</a></li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content">
+                                <div class="tab-pane show active" style="min-height:400px;">
+
+                                    @if (tabindex == 0)
+                                    {
+                                        <div class="row form-inline form-inline-end">
+                                            <div class="form-group col-6">
+                                                <label class="form-label">随笔专栏</label>
+                                                <SelectEntity TItem="Classify" TKey="long?" @bind-Value="item.ClassifyId" DisplayText="e => e.ClassifyName" />
+                                            </div>
+                                            <div class="form-group col-6">
+                                                <label class="form-label">技术频道</label>
+                                                <SelectEntity TItem="Channel" TKey="long" @bind-Value="item.ChannelId" DisplayText="e => e.ChannelName" />
+                                            </div>
+                                            <div class="form-group col-8">
+                                                <label class="form-label">标题</label>
+                                                <input @bind="item.Title" type="text" class="form-control" placeholder="" maxlength="200">
+                                            </div>
+                                            <div class="form-group col-4">
+                                                <label class="form-label">随笔类型</label>
+                                                <SelectEnum TEnum="ArticleType" @bind-Value="item.ArticleType" />
+                                            </div>
+                                            <div class="form-group col-6">
+                                                <label class="form-label">关键字</label>
+                                                <input @bind="item.Keywords" type="text" class="form-control" placeholder="" maxlength="400">
+                                            </div>
+                                            <div class="form-group col-6">
+                                                <label class="form-label">来源</label>
+                                                <input @bind="item.Source" type="text" class="form-control" placeholder="" maxlength="400">
+                                            </div>
+                                            <div class="form-group col-12">
+                                                <label class="form-label">摘要</label>
+                                                <textarea @bind="item.Excerpt" class="form-control" placeholder="" maxlength="500"></textarea>
+                                            </div>
+                                            <div class="form-group col-12">
+                                                <label class="form-label">正文</label>
+                                                <textarea @bind="item.Content" class="form-control" placeholder="" rows="12"></textarea>
+                                            </div>
+                                            <div class="form-group col-12">
+                                                <label class="form-label">缩略图</label>
+                                                <input @bind="item.Thumbnail" type="text" class="form-control" placeholder="" maxlength="400">
+                                            </div>
+                                        </div>
+                                    }
+
+                                    @if (tabindex == 1)
+                                    {
+                                        <div class="row form-inline form-inline-end">
+                                            <div class="form-group col-3">
+                                                <label class="form-label">浏览量</label>
+                                                <input @bind="item.ViewHits" type="number" class="form-control" placeholder="">
+                                            </div>
+                                            <div class="form-group col-3">
+                                                <label class="form-label">评论数量</label>
+                                                <input @bind="item.CommentQuantity" type="number" class="form-control" placeholder="">
+                                            </div>
+                                            <div class="form-group col-3">
+                                                <label class="form-label">点赞数量</label>
+                                                <input @bind="item.LikesQuantity" type="number" class="form-control" placeholder="">
+                                            </div>
+                                            <div class="form-group col-3">
+                                                <label class="form-label">收藏数量</label>
+                                                <input @bind="item.CollectQuantity" type="number" class="form-control" placeholder="">
+                                            </div>
+                                            <div class="form-group col-3">
+                                                <label class="form-label">是否审核</label>
+                                                <Switch @bind-Value="item.IsAudit" OnColor="Color.Success" />
+                                            </div>
+                                            <div class="form-group col-3">
+                                                <label class="form-label">是否推荐</label>
+                                                <Switch @bind-Value="item.Recommend" OnColor="Color.Success" />
+                                            </div>
+                                            <div class="form-group col-3">
+                                                <label class="form-label">是否置顶</label>
+                                                <Switch @bind-Value="item.IsStickie" OnColor="Color.Success" />
+                                            </div>
+                                            <div class="form-group col-3">
+                                                <label class="form-label">字数</label>
+                                                <input @bind="item.WordNumber" type="number" class="form-control" placeholder="">
+                                            </div>
+                                            <div class="form-group col-3">
+                                                <label class="form-label">阅读时长</label>
+                                                <input @bind="item.ReadingTime" type="number" class="form-control" placeholder="">
+                                            </div>
+                                            <div class="form-group col-3">
+                                                <label class="form-label">开启评论</label>
+                                                <Switch @bind-Value="item.Commentable" OnColor="Color.Success" />
+                                            </div>
+                                            <div class="form-group col-12">
+                                                <label class="form-label">标签</label>
+                                                <SelectTable2 TItem="Tag2" TKey="long" @bind-Items="item.Tags" IsSearchText="false" PageSize="-1">
+                                                    @context.TagName
+                                                </SelectTable2>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    @if (tabindex == 2)
+                                    {
+                                        <div class="row">
+                                            <div class="form-group col-12">
+                                                <SelectTable2 TItem="Collection" TKey="long" @bind-Items="item.Collections" IsSearchText="false" PageSize="-1">
+                                                    @context.Name
+                                                </SelectTable2>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Inject] IAggregateRootRepository<Article> repository { get; set; }
+    int tabindex;
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        var allClassifies = await fsql.Select<Classify>().ToListAsync();
+        var allChannels = await fsql.Select<Channel>().ToListAsync();
+        var allCollections = await fsql.Select<Collection>().ToListAsync();
+        var allTags = await fsql.Select<Tag2>().ToListAsync();
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("随笔专栏", "ClassifyId", false, 12,
+                string.Join(",", allClassifies.Select(a => a.ClassifyName)), 
+                string.Join(",", allClassifies.Select(a => a.Id))),
+            new AdminFilterInfo("技术频道", "ChannelId", false, 6,
+                string.Join(",", allChannels.Select(a => a.ChannelName)), 
+                string.Join(",", allChannels.Select(a => a.Id))),
+            new AdminFilterInfo("随笔类型", "ArticleType", false, 6, "原创,转载,翻译", "0,1,2"),
+            new AdminFilterInfo("收藏集", "Collections", false, 6,
+                string.Join(",", allCollections.Select(a => a.Name)), 
+                string.Join(",", allCollections.Select(a => a.Id))),
+            new AdminFilterInfo("标签", "Tags", true, 6, 
+                string.Join(",", allTags.Select(a => a.TagName)), 
+                string.Join(",", allTags.Select(a => a.Id))),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<Article> e)
+    {
+        e.Select.Include(a => a.Classify)
+            .WhereIf(e.Filters[0].HasValue, a => e.Filters[0].Values<long?>().Contains(a.ClassifyId))
+            .Include(a => a.Channel)
+            .WhereIf(e.Filters[1].HasValue, a => e.Filters[1].Values<long>().Contains(a.ChannelId))
+            .WhereIf(e.Filters[2].HasValue, a => a.ArticleType == e.Filters[2].Value<ArticleType>())
+            .WhereIf(e.Filters[3].HasValue, a => a.Collections.Any(b => e.Filters[3].Values<long>().Contains(b.Id)))
+            .WhereIf(e.Filters[4].HasValue, a => a.Tags.Any(b => e.Filters[4].Values<long>().Contains(b.Id)))
+            .WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText) || 
+                a.Keywords.Contains(e.SearchText) || 
+                a.Excerpt.Contains(e.SearchText));
+    }
+
+    async Task OnEdit(Article item)
+    {
+        if (item.Collections == null)
+        {
+            if (item.Id == default) item.Collections = new();
+            else await new List<Article> { item }.IncludeManyAsync(repository.Orm, a => a.Collections);
+            repository.Attach(item);
+        }
+        if (item.Tags == null)
+        {
+            if (item.Id == default) item.Tags = new();
+            else await new List<Article> { item }.IncludeManyAsync(repository.Orm, a => a.Tags);
+            repository.Attach(item);
+        }
+        await Task.Yield();
+    }
+}

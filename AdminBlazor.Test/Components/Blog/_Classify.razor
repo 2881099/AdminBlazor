@@ -1,0 +1,77 @@
+@page "/Blog/Classify"
+@using LinCms.Entities.Blog
+
+<PageTitle>随笔专栏</PageTitle>
+
+<blockquote class="quote-info m-3 p-0 pl-2"><h5>提示：这个页面使用 AdminBlazor 生成器的示例。【菜单管理】->【增删改查】</h5></blockquote>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <AdminTable2 TItem="Classify" Context="item" PageSize="20" Title="随笔专栏"
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+                <TableHeader>
+                    <th>分类专栏名称</th>
+                    <th>排序</th>
+                    <th>随笔数量</th>
+                    <th>封面图</th>
+                    <th>创建者</th>
+                    <th>创建时间</th>
+                </TableHeader>
+                <TableRow>
+                    <td>@item.ClassifyName</td>
+                    <td>@item.SortCode</td>
+                    <td>@item.ArticleCount</td>
+                    <td>@item.Thumbnail</td>
+                    <td>@item.CreatedUserName</td>
+                    <td>@item?.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </TableRow>
+                <EditTemplate>
+                    <div class="row form-inline form-inline-end">
+                        <div class="form-group col-12">
+                            <label class="form-label">分类专栏名称</label>
+                            <input @bind="item.ClassifyName" type="text" class="form-control" placeholder="" maxlength="50">
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">排序</label>
+                            <input @bind="item.SortCode" type="number" class="form-control" placeholder="">
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">随笔数量</label>
+                            <input @bind="item.ArticleCount" type="number" class="form-control" placeholder="">
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">封面图</label>
+                            <input @bind="item.Thumbnail" type="text" class="form-control" placeholder="" maxlength="100">
+                        </div>
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Inject] IAggregateRootRepository<Classify> repository { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<Classify> e)
+    {
+        e.Select.WhereIf(!e.SearchText.IsNull(), a => a.ClassifyName.Contains(e.SearchText) || 
+                a.CreatedUserName.Contains(e.SearchText));
+    }
+
+    async Task OnEdit(Classify item)
+    {
+        await Task.Yield();
+    }
+}

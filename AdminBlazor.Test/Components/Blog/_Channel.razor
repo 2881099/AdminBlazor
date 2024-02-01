@@ -67,7 +67,7 @@
 </div>
 
 <AllocTable2 TItem="Channel" TChild="Tag2" @bind-Item="@allocItemTags" ChildProperty="Tags" Title="@($"【分配标签】{allocItemTags?.ChannelName}")">
-    <TableTd1>@context.Alias</TableTd1>
+    <TableTd1>@context.TagName</TableTd1>
 </AllocTable2>
 
 @code {

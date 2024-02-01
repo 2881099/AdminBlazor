@@ -70,7 +70,7 @@ void ButtonClick()
 
 ## 组件
 
-1. AdminTable2\<TItem\>
+### 1. 增删改查 AdminTable2\<TItem\>
 
 > 使用 FreeSql 对实体类型 TItem 增删改查
 
@@ -105,7 +105,7 @@ void ButtonClick()
 | RenderFragment CardHeader | 卡片 Header 模板 |
 | RenderFragment CardFooter | 卡片 Fotter 模板 |
 
-2. AllocTable2\<TItem, TChild\>
+### 2. 弹框分配 AllocTable2\<TItem, TChild\>
 
 > 弹框分配实体类型 TItem 【多对多】导航属性
 
@@ -121,9 +121,9 @@ void ButtonClick()
 | RenderFragment TableHeader | TChild 表格 TR 模板 |
 | RenderFragment\<TItem\> TableRow | TChild 表格 TD 模板 |
 
-== InputTable2\<TItem, TKey\>
+### 3. 文本框 InputTable2\<TItem, TKey\>
 
-> 文本框 + 按钮，弹框绑定 【多对一】、【多对多】导航属性
+> 文本框 + 按钮弹框绑定 【多对一】、【多对多】导航属性
 
 | 名称 | 说明 |
 | --- | --- |
@@ -140,9 +140,7 @@ void ButtonClick()
 | RenderFragment TableHeader | 弹框 表格 TR 模板 |
 | RenderFragment\<TItem\> TableRow | 弹框 表格 TD 模板 |
 
-3. SelectTable2\<TItem, TKey\>
-
-> > 单选、多选绑定，【多对一】、【多对多】导航属性
+### 4. 单选/多选 SelectTable2\<TItem, TKey\>
 
 | 名称 | 说明 |
 | --- | --- |
@@ -154,9 +152,7 @@ void ButtonClick()
 | bool IsSearchText | 开启文本搜索 |
 | RenderFragment\<TItem\> ChildContent | 内容模板 |
 
-4. AdminModal
-
-> 弹框
+### 5. 弹框 AdminModal
 
 | 名称 | 说明 |
 | --- | --- |

@@ -42,7 +42,7 @@ public class AdminLoginInfo
         await InitRoles();
         CurrentMenu = RoleMenus.Where(a => a.PathLower == path).FirstOrDefault();
 
-        if (CurrentMenu == null && new[]
+        if (CurrentMenu == null && Roles.Any() && new[]
         {
             "admin",
         }.Contains(path)) return AuthPathSuccess = true;

@@ -31,13 +31,13 @@
             </ul>
             @if (login?.User != null)
             {
-                <Logout ImageUrl="logo.png" DisplayName="@login.User.Username" UserName="@login.Roles.FirstOrDefault().Name" class="">
+                <Logout ImageUrl="logo.png" DisplayName="@login.User.Username" UserName="@login.Roles.FirstOrDefault()?.Name" class="">
                     <HeaderTemplate>
                         <div class="d-flex flex-fill align-items-center">
                             <img alt="avatar" src="logo.png" style="border-radius: 50%;">
                             <div class="flex-fill">
                                 <div class="logout-dn">@login.User.Username</div>
-                                <div class="logout-un">@login.Roles.FirstOrDefault().Description</div>
+                                <div class="logout-un">@login.Roles.FirstOrDefault()?.Description</div>
                             </div>
                         </div>
                     </HeaderTemplate>
@@ -147,7 +147,8 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        if (!login.AuthPathSuccess) await JS.Error("没有访问权限.");
+        if (login.Roles?.Any() == false) await JS.Error("没有访问权限: 未分配角色.");
+        else if (!login.AuthPathSuccess) await JS.Error("没有访问权限.");
 
         locationChangingHandler = nav.RegisterLocationChangingHandler(async e =>
         {

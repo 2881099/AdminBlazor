@@ -102,7 +102,6 @@ partial class AllocTable2<TItem, TChild>
         var childs = metaTItem.Properties[ChildProperty].GetValue(Item) as List<TChild>;
         childs.Clear();
         childs.AddRange(allItems.Values.Where(a => a.Selected).Select(a => a.Value));
-        if (ItemChanged.HasDelegate) await ItemChanged.InvokeAsync(null);
         await repository.UpdateAsync(Item);
         await JS.Success("保存成功！");
         await OnClose();
@@ -110,6 +109,7 @@ partial class AllocTable2<TItem, TChild>
 
     async Task OnClose()
     {
+        if (ItemChanged.HasDelegate) await ItemChanged.InvokeAsync(null);
         currentItems?.Clear();
         currentItems = null;
         allItems.Clear();

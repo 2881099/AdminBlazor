@@ -40,7 +40,7 @@
 
         var selectedCount = allItems.Values.Where(a => a.Selected).Count();
         <div class="modal-footer">
-            @if (selectedCount > 0)
+            @if (selectedCount >= 0)
             {
                 <button @onclick="e => { foreach (var item in allItems.Values) item.Selected = false; }" type="button" class="ml-2 btn btn-light"><i class="far fa-square"></i> 重置</button>
                 <button @onclick="AllocFinish" type="button" class="ml-2 btn btn-success"><i class="fas fa-plus"></i> 确认选择 @selectedCount 项</button>

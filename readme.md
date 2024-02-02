@@ -162,6 +162,8 @@ void ButtonClick()
 | --- | --- |
 | string Title | 标题 |
 | bool Visible | 是否显示 |
+| bool IsBackdropStatic | 是否静态模式 |
+| bool IsKeyboard | 是否接受 ESC 关闭 |
 | string DialogClassName | 弹框样式，如：modal-sm、modal-lg、modal-xl、modal-xxl、modal-fullscreen |
 | string YesButton | 确认按钮 |
 | string CloseButton | 关闭按钮 |

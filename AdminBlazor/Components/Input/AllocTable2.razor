@@ -4,7 +4,7 @@
 @using System.Collections
 @using FreeSql.Internal.Model
 
-<AdminModal Visible="Item != null" DialogClassName="modal-lg modal-height0" Title="@(Title.IsNull() ? "【分配】" : Title)" OnClose="OnClose">
+<AdminModal Visible="Item != null" IsBackdropStatic="false" DialogClassName="modal-lg modal-height0" Title="@(Title.IsNull() ? "【分配】" : Title)" OnClose="OnClose">
     @if (Item != null)
     {
         if (TableTd1 != null && TableRow != null)

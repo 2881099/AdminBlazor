@@ -33,7 +33,7 @@
     <button type="button" class="btn btn-primary" @onclick="OpenModal" role="button" aria-disabled="false">选择</button>
 </div>
 
-<AdminModal Visible="showModal" ClientId="@ClientId" DialogClassName="modal-lg modal-height0" Title="@ModalTitle" OnClose="OnClose">
+<AdminModal Visible="showModal" ClientId="@ClientId" IsBackdropStatic="false" DialogClassName="modal-lg modal-height0" Title="@ModalTitle" OnClose="OnClose">
     @if (showModal)
     {
         if (TableTd1 != null && TableRow != null)

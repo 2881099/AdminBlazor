@@ -1,6 +1,6 @@
 ﻿@namespace BootstrapBlazor.Components
 
-<div class="modal fade draggable " id="@ClientId" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+<div class="modal fade draggable " id="@ClientId" data-bs-backdrop="@(IsBackdropStatic ? "static" : "true")" data-bs-keyboard="@(IsKeyboard ? "true" : "false")" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog @DialogClassName modal-dialog-scrollable">
         <div class="modal-content">
             @if (overlay)
@@ -32,10 +32,16 @@
 
 @code {
 
-    [Parameter]
-    public string ClientId { get; set; } = $"modal-{Guid.NewGuid().ToString("n")}";
+    [Parameter] public string ClientId { get; set; } = $"modal-{Guid.NewGuid().ToString("n")}";
+    [Parameter] public bool IsBackdropStatic { get; set; } = true;
+    [Parameter] public bool IsKeyboard { get; set; } = true;
 
-    async Task Show() => await JS.InvokeVoidAsync("eval", $"$('#{ClientId}').modal('show')");
+    async Task Show() => await JS.InvokeVoidAsync("adminBlazorJS.modalShow", $"#{ClientId}", DotNetObjectReference.Create(this));
+    [JSInvokable]
+    async public Task ModalOnClose()
+    {
+        if (OnClose.HasDelegate) await OnClose.InvokeAsync();
+    }
     async Task Hide()
     {
         await JS.InvokeVoidAsync("eval", $"$('#{ClientId}').modal('hide')");

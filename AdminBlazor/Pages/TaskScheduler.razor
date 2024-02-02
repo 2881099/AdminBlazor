@@ -178,7 +178,7 @@
     }
 </AdminModal>
 
-<AdminModal Visible="taskLog != null" OnClose="e => taskLog = null" Title="@($"【日志】{logTask?.Topic}")" DialogClassName="modal-xl">
+<AdminModal Visible="taskLog != null" OnClose="e => taskLog = null" Title="@($"【日志】{logTask?.Topic}")" IsBackdropStatic="false" DialogClassName="modal-xl">
     <div class="card card-info card-outline">
         <div class="card-header d-block">
             <AdminSearchFilter AdminQuery="qLog" />
@@ -232,7 +232,7 @@
 
 @if (LoadResult?.Clusters?.Any() == true)
 {
-    <AdminModal Visible="clusterLog != null" OnClose="e => clusterLog = null" Title="集群日志" DialogClassName="modal-xl">
+    <AdminModal Visible="clusterLog != null" OnClose="e => clusterLog = null" Title="集群日志" IsBackdropStatic="false" DialogClassName="modal-xl">
         <div class="card card-info card-outline">
             <div class="card-header d-block">
                 <AdminSearchFilter AdminQuery="qCluster" />

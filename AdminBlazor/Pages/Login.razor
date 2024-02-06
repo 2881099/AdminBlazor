@@ -15,11 +15,11 @@
                 </div>
                 <div class="card-body login-card-body">
                     <div class="input-group mb-3">
-                        <div class="form-floating"><input @bind="username" id="loginUser" type="text" class="form-control" placeholder=""><label for="loginUser" style="font-weight:300">用户名</label></div>
+                        <div class="form-floating"><input onkeydown="if(event.code=='Enter'&&this.value.length>0)$('#loginPassword')[0].focus()" @bind="username" id="loginUser" type="text" class="form-control" placeholder=""><label for="loginUser" style="font-weight:300">用户名</label></div>
                         <div class="input-group-text"><span class="fa fa-user"></span></div>
                     </div>
                     <div class="input-group mb-3">
-                        <div class="form-floating"> <input @bind="password" id="loginPassword" type="password" class="form-control" placeholder=""><label for="loginPassword" style="font-weight:300">密码</label></div>
+                        <div class="form-floating"> <input onkeydown="if(event.code=='Enter'&&this.value.length>0)$('#loginSubmit').click()" @bind="password" id="loginPassword" type="password" class="form-control" placeholder=""><label for="loginPassword" style="font-weight:300">密码</label></div>
                         <div class="input-group-text"><span class="fas fa-lock"></span></div>
                     </div>
                     <div class="row">
@@ -27,7 +27,7 @@
                             <div class="form-check"><input @bind="remember" class="form-check-input" type="checkbox" id="flexCheckDefault"><label class="form-check-label" for="flexCheckDefault">记住</label></div>
                         </div>
                         <div class="col-4">
-                            <div class="d-grid gap-2"> <button @onclick="Submit" class="btn btn-primary">登陆</button> </div>
+                            <div class="d-grid gap-2"><button @onclick="Submit" id="loginSubmit" class="btn btn-primary">登陆</button></div>
                         </div>
                     </div>
                 </div>
@@ -49,6 +49,15 @@
     [Inject] IIPLocatorProvider ipLocatorProvider { get; set; }
     string username, password;
     bool remember = true;
+
+    async Task PasswordOnKeydown(KeyboardEventArgs e)
+    {
+        System.Console.WriteLine(e.Code);
+        if (e.Code == "Enter" && password?.Length > 0)
+        {
+            await Submit();
+        }
+    }
 
     async Task Submit()
     {

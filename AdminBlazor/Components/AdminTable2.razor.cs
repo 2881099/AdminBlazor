@@ -10,6 +10,7 @@ partial class AdminTable2<TItem>
 {
 
     [Inject] IAggregateRootRepository<TItem> repository { get; set; }
+    IFreeSql fsql => repository.Orm;
 
     /// <summary>
     /// 打开UI调试
@@ -117,6 +118,10 @@ partial class AdminTable2<TItem>
     /// 正在编辑，设置编辑对象
     /// </summary>
     [Parameter] public EventCallback<TItem> OnEdit { get; set; }
+    /// <summary>
+    /// 编辑完成
+    /// </summary>
+    [Parameter] public EventCallback<TItem> OnEditFinish { get; set; }
     /// <summary>
     /// 正在删除
     /// </summary>
@@ -276,6 +281,7 @@ partial class AdminTable2<TItem>
         {
             await repository.InsertAsync(item);
         }
+        if (OnEditFinish.HasDelegate) await OnEditFinish.InvokeAsync(item);
         item = null;
         await Load();
     }
@@ -328,6 +334,19 @@ partial class AdminTable2<TItem>
                             else break;
                         }
                         break;
+                    }
+                }
+                for (var a = 0; a < items.Count; a++)
+                {
+                    var rootMenu = items[a];
+                    var selectedCount = 0;
+                    if (rootMenu.Level == 1)
+                    {
+                        a++;
+                        for (; a < items.Count && items[a].Level > rootMenu.Level; a++)
+                            if (items[a].Selected) selectedCount++;
+                        a--;
+                        rootMenu.Selected = selectedCount > 0;
                     }
                 }
             }

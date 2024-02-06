@@ -11,9 +11,7 @@
         <div class="login-box">
             <div class="card card-outline card-light">
                 <div class="card-header d-block">
-                    <a href="@AdminBlazorOptions.Global_BaseUrl" class="link-dark text-center link-offset-2 link-opacity-100 link-opacity-50-hover">
-                        <h5 class="mb-3 mt-3"><b>@AdminBlazorOptions.Global_Title</b></h5>
-                    </a>
+                    <h5 class="mb-3 mt-3 text-center"><b>@admin.Tenant?.Title</b></h5>
                 </div>
                 <div class="card-body login-card-body">
                     <div class="input-group mb-3">
@@ -43,27 +41,44 @@
 </div>
 
 @code {
-    [Inject]
-    public IHttpContextAccessor? httpContextAccessor { get; set; }
+    [CascadingParameter, Inject] AdminContext admin { get; set; }
+    [Inject] IFreeSql fsql { get; set; }
+    [Inject] Scheduler scheduler { get; set; }
+    [Inject] IHttpContextAccessor httpContextAccessor { get; set; }
+    [Inject] WebClientService webClientService { get; set; }
+    [Inject] IIPLocatorProvider ipLocatorProvider { get; set; }
     string username, password;
     bool remember = true;
 
     async Task Submit()
     {
-        var context = httpContextAccessor.HttpContext;
         if (username.IsNull() || password.IsNull())
         {
             await JS.Error("登陆失败！", "用户名或密码不能为空");
             return;
         }
 
-        var ip = context.Connection?.RemoteIpAddress?.ToString() ?? "";
+        var ip = admin.HttpContext.Connection?.RemoteIpAddress?.ToString() ?? "";
         if (limit.TryGetValue(ip, out var count) && count >= 5)
         {
             await JS.Error("频率过高！", "请过一会再试...");
             return;
         }
 
+        var clientInfo = await webClientService.GetClientInfo();
+        var log = new UserLoginEntity
+        {
+            LoginTime = DateTime.Now,
+            Username = username,
+            Browser = clientInfo.Browser,
+            City = clientInfo.City,
+            Device = clientInfo.Device,
+            Engine = clientInfo.Engine,
+            Ip = clientInfo.Ip,
+            Language = clientInfo.Language,
+            OS = clientInfo.OS,
+            UserAgent = clientInfo.UserAgent,
+        };
         var user = await fsql.Select<UserEntity>().Where(a => a.Username == username).FirstAsync();
         if (user == null || user.Password != password)
         {
@@ -73,54 +88,25 @@
                     removeLimit = null;
                     limit.TryRemove(ip, out var _);
                 });
+
+            log.Type = UserLoginEntity.LoginType.登陆失败;
+            await fsql.Insert(log).ExecuteAffrowsAsync();
             await JS.Error("登陆失败！", "用户名或密码不正确");
             return;
         }
-        nav.NavigateTo($"{AdminBlazorOptions.Global_BaseUrl}/Login?LoginToken={DesEncrypt.Encrypt(user.Id.ToString()).UrlEncode()}&Redirect={redirect.UrlEncode()}", true);
+        await admin.SignIn(user, remember);
+        log.Type = UserLoginEntity.LoginType.登陆成功;
+        await fsql.Insert(log).ExecuteAffrowsAsync();
+
+        var redirect = nav.GetQueryStringValue("Redirect");
+        if (redirect.IsNull()) redirect = "/Admin/";
+        admin.Redirect(redirect);
     }
 
     string removeLimit;
     static ConcurrentDictionary<string, int> limit = new();
-
-    string redirect;
     async protected override Task OnInitializedAsync()
     {
-        var context = httpContextAccessor.HttpContext;
-        redirect = nav.GetQueryStringValue("Redirect").IsNull(AdminBlazorOptions.Global_BaseUrl);
-        var loginToken = nav.GetQueryStringValue("LoginToken");
-
-        if (!loginToken.IsNull())
-        {
-            var userId = DesEncrypt.Decrypt(loginToken).ConvertTo<long>();
-            var user = await fsql.Select<UserEntity>().Where(a => a.Id == userId).FirstAsync();
-            if (user != null)
-            {
-                user.LoginTime = DateTime.Now;
-                await fsql.Update<UserEntity>().Where(a => a.Id == userId).Set(a => a.LoginTime, user.LoginTime).ExecuteAffrowsAsync();
-                context.Response.Cookies.Append("login", DesEncrypt.Encrypt(user.Id.ToString() + "|" + user.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")), new CookieOptions
-                {
-                    Path = "/",
-                    Expires = remember ? DateTimeOffset.UtcNow.AddDays(15) : null
-                });
-                context.Response.Redirect(redirect);
-                return;
-            }
-        }
-
-        var logoutToken = nav.GetQueryStringValue("LogoutToken");
-        if (!logoutToken.IsNull())
-        {
-            var username = DesEncrypt.Decrypt(logoutToken);
-            if (!username.IsNull() && AdminLoginInfo.TryParseCookie(context.Request.Cookies["login"], out var userId, out var loginTime) && userId > 0)
-            {
-                var user = await fsql.Select<UserEntity>().Where(a => a.Id == userId).FirstAsync();
-                if (user != null && username == "logout$$" + user.Username)
-                {
-                    context.Response.Cookies.Delete("login");
-                    context.Response.Redirect(redirect);
-                    return;
-                }
-            }
-        }
+        await admin.Init();
     }
 }

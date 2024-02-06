@@ -164,15 +164,15 @@
 
 @code {
 
-    [Inject] IAggregateRootRepository<Article> repository { get; set; }
+    [Inject] IAggregateRootRepository<Article> repo { get; set; }
     int tabindex;
 
     async Task InitQuery(AdminQueryInfo e)
     {
-        var allClassifies = await fsql.Select<Classify>().ToListAsync();
-        var allChannels = await fsql.Select<Channel>().ToListAsync();
-        var allCollections = await fsql.Select<Collection>().ToListAsync();
-        var allTags = await fsql.Select<Tag2>().ToListAsync();
+        var allClassifies = await repo.Orm.Select<Classify>().ToListAsync();
+        var allChannels = await repo.Orm.Select<Channel>().ToListAsync();
+        var allCollections = await repo.Orm.Select<Collection>().ToListAsync();
+        var allTags = await repo.Orm.Select<Tag2>().ToListAsync();
         e.Filters = new AdminFilterInfo[]
         {
             new AdminFilterInfo("随笔专栏", "ClassifyId", false, 12,
@@ -210,14 +210,14 @@
         if (item.Collections == null)
         {
             if (item.Id == default) item.Collections = new();
-            else await new List<Article> { item }.IncludeManyAsync(repository.Orm, a => a.Collections);
-            repository.Attach(item);
+            else await new List<Article> { item }.IncludeManyAsync(repo.Orm, a => a.Collections);
+            repo.Attach(item);
         }
         if (item.Tags == null)
         {
             if (item.Id == default) item.Tags = new();
-            else await new List<Article> { item }.IncludeManyAsync(repository.Orm, a => a.Tags);
-            repository.Attach(item);
+            else await new List<Article> { item }.IncludeManyAsync(repo.Orm, a => a.Tags);
+            repo.Attach(item);
         }
         await Task.Yield();
     }

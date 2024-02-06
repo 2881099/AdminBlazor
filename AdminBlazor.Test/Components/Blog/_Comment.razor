@@ -60,7 +60,7 @@
 
 @code {
 
-    [Inject] IAggregateRootRepository<Comment> repository { get; set; }
+    [Inject] IAggregateRootRepository<Comment> repo { get; set; }
 
     async Task InitQuery(AdminQueryInfo e)
     {

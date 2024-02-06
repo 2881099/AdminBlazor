@@ -37,6 +37,7 @@
                                     <th>状态</th>
                                     <th>错误</th>
                                     <th>最后运行</th>
+                                    <th>下次运行</th>
                                     <th>创建时间</th>
                                 </tr>
                             </thead>
@@ -93,6 +94,7 @@
                                         </td>
                                         <td>@item.ErrorTimes</td>
                                         <td>@item.LastRunTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td>@LoadResult.NextTimes[x]?.ToString("yyyy-MM-dd HH:mm:ss")</td>
                                         <td>@item.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
                                     </tr>
                                 }
@@ -273,6 +275,7 @@
 }
 
 @code {
+    [Inject] Scheduler scheduler { get; set; }
 
     AdminQueryInfo q = new();
     protected override void OnInitialized()

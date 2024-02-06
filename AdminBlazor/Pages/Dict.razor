@@ -89,7 +89,7 @@
 
 @code {
 
-    [Inject] IAggregateRootRepository<DictEntity> repository { get; set; }
+    [Inject] IAggregateRootRepository<DictEntity> repo { get; set; }
 
     void OnQuery(AdminQueryEventArgs<DictEntity> e)
     {
@@ -105,8 +105,8 @@
     async Task OnRemove(List<DictEntity> items)
     {
         var ids = items.Select(a => a.Id).ToArray();
-        await fsql.Delete<DictEntity>().Where(a => ids.Contains(a.ParentId)).ExecuteAffrowsAsync();
-        clickOpt = new(await fsql.Select<DictEntity>().Where(a => a.ParentId == 0 && !ids.Contains(a.Id)).FirstAsync());
+        await repo.Orm.Delete<DictEntity>().Where(a => ids.Contains(a.ParentId)).ExecuteAffrowsAsync();
+        clickOpt = new(await repo.Orm.Select<DictEntity>().Where(a => a.ParentId == 0 && !ids.Contains(a.Id)).FirstAsync());
         await query2.InvokeQueryAsync();
     }
     AdminItem<DictEntity> clickOpt;
@@ -140,7 +140,7 @@
     {
         item.ParentId = clickOpt.Value.Id;
         if (item.Id == 0)
-            item.Sort = await fsql.Select<DictEntity>().Where(a => a.ParentId == item.ParentId).MaxAsync(a => a.Sort) + 1;
+            item.Sort = await repo.Orm.Select<DictEntity>().Where(a => a.ParentId == item.ParentId).MaxAsync(a => a.Sort) + 1;
         await Task.Yield();
     }
 }

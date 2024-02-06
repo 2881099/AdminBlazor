@@ -78,11 +78,11 @@
 
 @code {
 
-    [Inject] IAggregateRootRepository<Tag2> repository { get; set; }
+    [Inject] IAggregateRootRepository<Tag2> repo { get; set; }
 
     async Task InitQuery(AdminQueryInfo e)
     {
-        var allChannels = await fsql.Select<Channel>().ToListAsync();
+        var allChannels = await repo.Orm.Select<Channel>().ToListAsync();
         e.Filters = new AdminFilterInfo[]
         {
             new AdminFilterInfo("技术频道", "Channels", true, 12, 
@@ -103,8 +103,8 @@
         if (item.Channels == null)
         {
             if (item.Id == default) item.Channels = new();
-            else await new List<Tag2> { item }.IncludeManyAsync(repository.Orm, a => a.Channels);
-            repository.Attach(item);
+            else await new List<Tag2> { item }.IncludeManyAsync(repo.Orm, a => a.Channels);
+            repo.Attach(item);
         }
         await Task.Yield();
     }

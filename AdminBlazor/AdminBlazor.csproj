@@ -8,13 +8,13 @@
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Authors>FreeSql;YeXiangQin</Authors>
-		<Description>AdminBlazor 是一款 Blazor 后台管理项目，支持 RABC 权限菜单/按钮，支持一对一、一对多、多对多代码生成 .razor 界面。</Description>
+		<Description>AdminBlazor 是一款 Blazor Server SaaS 后台管理项目，支持 RABC 权限菜单/按钮，支持一对一、一对多、多对多代码生成 .razor 界面，集成菜单、角色、用户、定时任务、数据字典、租户等功能。</Description>
 		<PackageProjectUrl>https://github.com/2881099/AdminBlazor</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/2881099/AdminBlazor</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageTags>Blazor;Admin;RABC;Generator</PackageTags>
-		<Version>1.0.11</Version>
+		<Version>1.1.8</Version>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
 	</PropertyGroup>
 
@@ -25,7 +25,9 @@
 	<ItemGroup>
 		<PackageReference Include="BootstrapBlazor" Version="8.1.7" />
 		<PackageReference Include="BootstrapBlazor.FontAwesome" Version="8.0.1" />
+		<PackageReference Include="BootstrapBlazor.Middleware" Version="8.0.0" />
 		<PackageReference Include="FreeScheduler" Version="2.0.28" />
+		<PackageReference Include="FreeSql.Cloud" Version="1.8.3" />
 		<PackageReference Include="FreeSql.Extensions.AggregateRoot" Version="3.2.812" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />

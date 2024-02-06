@@ -64,6 +64,8 @@ partial class InputTable2<TItem, TKey>
     /// </summary>
     [Parameter] public EventCallback<AdminQueryEventArgs<TItem>> OnQuery { get; set; }
 
+    [Inject] IFreeSql fsql { get; set; }
+
     TableInfo metaTItem;
     TKey GetPrimaryValue(TItem item) => metaTItem.Primarys[0].GetValue(item).ConvertTo<TKey>();
     protected override void OnInitialized()

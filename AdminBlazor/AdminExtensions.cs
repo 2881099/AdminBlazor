@@ -14,133 +14,130 @@ public class AdminBlazorOptions
     public ushort WorkId { get; set; } = 1;
     public string GeneartorKey { get; set; } = "10001";
     public string GeneartorServer { get; set; } = "http://47.245.82.251:31102";
-    internal string BaseUrl { get; set; } = "/Admin";
-    public string Title { get; set; } = "Admin Blazor";
     public Assembly[] Assemblies { get; set; }
     public Action<IServiceProvider, TaskInfo> SchedulerExecuting { get; set; }
     public Action<FreeSqlBuilder> FreeSqlBuilder { get; set; }
 
     internal static string Global_GeneartorKey;
     internal static string Global_GeneartorServer;
-    internal static string Global_BaseUrl;
-    internal static string Global_Title;
 }
 
 public static class AdminExtensions
 {
-
     public static IServiceCollection AddAdminBlazor(this IServiceCollection services, AdminBlazorOptions options)
     {
         if (options == null) options = new AdminBlazorOptions();
         AdminBlazorOptions.Global_GeneartorKey = options.GeneartorKey;
         AdminBlazorOptions.Global_GeneartorServer = options.GeneartorServer.TrimEnd('/');
-        AdminBlazorOptions.Global_BaseUrl = options.BaseUrl.TrimEnd('/');
-        AdminBlazorOptions.Global_Title = options.Title;
         if (options.Assemblies == null) options.Assemblies = new[] { typeof(AdminExtensions).Assembly };
         else options.Assemblies = options.Assemblies.Concat(new[] { typeof(AdminExtensions).Assembly }).Distinct().ToArray();
+        YitIdHelper.SetIdGenerator(new IdGeneratorOptions(options.WorkId) { WorkerIdBitLength = 6 });
+
+        var cloud = new FreeSqlCloud();
+        var mainEntities = new Dictionary<Type, bool>
+        {
+            [typeof(TenantEntity)] = true,
+            [typeof(TenantDatabaseEntity)] = true,
+            [typeof(TenantMenuEntity)] = true,
+            [typeof(DictEntity)] = true,
+        };
+        cloud.EntitySteering = (_, e) =>
+        {
+            if (mainEntities.ContainsKey(e.EntityType))
+            {
+                e.DBKey = "main";
+                return;
+            }
+        };
+        cloud.Register("main", () =>
+        {
+            var mainBuilder = new FreeSqlBuilder()
+                .UseNoneCommandParameter(true);
+            if (options.FreeSqlBuilder != null) options.FreeSqlBuilder?.Invoke(mainBuilder);
+            else mainBuilder
+                .UseConnectionString(DataType.Sqlite, @"Data Source=master.db")
+                .UseMonitorCommand(cmd => System.Console.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss")}] {cmd.CommandText}\r\n"))//监听SQL语句
+                .UseAutoSyncStructure(true); //自动同步实体结构到数据库，FreeSql不会扫描程序集，只有CRUD时才会生成表
+            var main = mainBuilder.Build();
+            AdminContext.ConfigFreeSql(main);
+            return main;
+        });
+
+        #region 初始化数据
+        var fsql = cloud.Use("main");
+        if (fsql.Select<MenuEntity>().Any() == false)
+        {
+            List<MenuEntity> getCudButtons(params MenuEntity[] btns) => new[]
+            {
+                new MenuEntity { Label = "添加", Path = "add", Sort = 10011, Type = MenuEntityType.按钮, },
+                new MenuEntity { Label = "编辑", Path = "edit", Sort = 10012, Type = MenuEntityType.按钮, },
+                new MenuEntity { Label = "删除", Path = "remove", Sort = 10013, Type = MenuEntityType.按钮, }
+            }.Concat(btns ?? new MenuEntity[0]).ToList();
+            var repo = fsql.GetAggregateRootRepository<MenuEntity>();
+            repo.Insert(new[]
+            {
+                new MenuEntity
+                {
+                    Label = "系统管理",
+                    Icon = "fa-code",
+                    Path = "",
+                    Sort = 1001,
+                    Type = MenuEntityType.菜单,
+                    Childs = new List<MenuEntity>
+                    {
+                        new MenuEntity { Label = "用户", Path = "Admin/User", Sort = 10001, Type = MenuEntityType.菜单, Childs = getCudButtons(
+                            new MenuEntity { Label = "分配角色", Path = "alloc_roles", Sort = 10014, Type = MenuEntityType.按钮, })
+                        },
+                        new MenuEntity { Label = "角色", Path = "Admin/Role", Sort = 10002, Type = MenuEntityType.菜单, Childs = getCudButtons(
+                            new MenuEntity { Label = "分配用户", Path = "alloc_users", Sort = 10014, Type = MenuEntityType.按钮, },
+                            new MenuEntity { Label = "分配菜单", Path = "alloc_menus", Sort = 10015, Type = MenuEntityType.按钮, })
+                        },
+                        new MenuEntity { Label = "菜单", Path = "Admin/Menu", Sort = 10003, Type = MenuEntityType.菜单, Childs = getCudButtons() },
+                        new MenuEntity { Label = "定时任务", Path = "Admin/TaskScheduler", Sort = 10004, Type = MenuEntityType.菜单, Childs = new List<MenuEntity>
+                            {
+                                new MenuEntity { Label = "添加", Path = "add", Sort = 10011, Type = MenuEntityType.按钮, },
+                                new MenuEntity { Label = "删除", Path = "remove", Sort = 10013, Type = MenuEntityType.按钮, },
+                                new MenuEntity { Label = "暂停", Path = "pause", Sort = 10014, Type = MenuEntityType.按钮, },
+                                new MenuEntity { Label = "恢复", Path = "resume", Sort = 10015, Type = MenuEntityType.按钮, },
+                                new MenuEntity { Label = "立即触发", Path = "runnow", Sort = 10016, Type = MenuEntityType.按钮, },
+                                new MenuEntity { Label = "查看日志", Path = "tasklog", Sort = 10017, Type = MenuEntityType.按钮, },
+                                new MenuEntity { Label = "集群日志", Path = "clusterlog", Sort = 10018, Type = MenuEntityType.按钮, },
+                            }
+                        },
+                        new MenuEntity { Label = "数据字典", Path = "Admin/Dict", Sort = 10005, Type = MenuEntityType.菜单,Childs = getCudButtons() },
+                        new MenuEntity { Label = "租户", Path = "Admin/Tenant", Sort = 10006, Type = MenuEntityType.菜单, Childs = getCudButtons() },
+                        new MenuEntity { Label = "数据库", Path = "Admin/TenantDatabase", Sort = 10007, Type = MenuEntityType.菜单, Childs = getCudButtons() },
+                    }
+                },
+            });
+        }
+        if (fsql.Select<TenantDatabaseEntity>().Any() == false)
+            fsql.Insert(new TenantDatabaseEntity { Label = "体验数据库", DataType = DataType.Sqlite, ConenctionString = "data source={database}.db" }).ExecuteAffrows();
+        if (fsql.Select<TenantEntity>().Any(a => a.Id == "main") == false)
+            fsql.Insert(new TenantEntity { Id = "main", Host = "localhost", Title = "AdminBlazor SaaS", Description = "AdminBlazor SaaS 系统主库(租户管理)", IsEnabled = true, DatabaseId = 0 }).ExecuteAffrows();
+        
+        if (fsql.Select<RoleEntity>().Where(a => a.IsAdministrator).Any() == false)
+            fsql.Insert(new RoleEntity { Name = "Administrator", Description = "管理员角色", IsAdministrator = true }).ExecuteAffrows();
+        if (fsql.Select<UserEntity>().Where(a => a.Roles.Any(b => b.IsAdministrator)).Any() == false)
+        {
+            var adminUser = new UserEntity { Username = "admin", Password = "freesql", Nickname = "管理员" };
+            adminUser.Roles = [fsql.Select<RoleEntity>().Where(a => a.IsAdministrator).First()];
+            fsql.GetAggregateRootRepository<UserEntity>().Insert(adminUser);
+        }
+        #endregion
         Func<IServiceProvider, IFreeSql> fsqlFactory = r =>
         {
-            var fsqlBuilder = new FreeSqlBuilder()
-                .UseNoneCommandParameter(true);
-            if (options.FreeSqlBuilder != null) options.FreeSqlBuilder?.Invoke(fsqlBuilder);
-            else fsqlBuilder
-                .UseConnectionString(DataType.Sqlite, @"Data Source=freedb.db")
-                .UseMonitorCommand(cmd => System.Console.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss")}] {cmd.CommandText}\r\n"))//监听SQL语句
-                .UseAutoSyncStructure(true); //自动同步实体结构到数据库，FreeSql不会扫描程序集，只有CRUD时才会生成表。
-            IFreeSql fsql = fsqlBuilder.Build();
-            YitIdHelper.SetIdGenerator(new IdGeneratorOptions(options.WorkId) { WorkerIdBitLength = 6 });
-            var serverTime = fsql.Ado.QuerySingle(() => DateTime.UtcNow);
-            var timeOffset = DateTime.UtcNow.Subtract(serverTime);
-            fsql.Aop.AuditValue += (_, e) =>
-            {
-                if (e.Column.CsName == nameof(MenuEntity.PathLower) && typeof(MenuEntity).IsAssignableFrom(e.Column.Table.Type))
-                {
-                    e.Value = e.Column.Table.ColumnsByCs[nameof(MenuEntity.Path)].GetValue(e.Object).ConvertTo<string>()?.ToLower();
-                    return;
-                }
-
-                //数据库时间
-                if ((e.Column.CsType == typeof(DateTime) || e.Column.CsType == typeof(DateTime?))
-                    && e.Column.Attribute.ServerTime != DateTimeKind.Unspecified
-                    && (e.Value == null || (DateTime)e.Value == default || (DateTime?)e.Value == default))
-                {
-                    e.Value = (e.Column.Attribute.ServerTime == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now).Subtract(timeOffset);
-                    return;
-                }
-
-                //雪花Id
-                if (e.Column.CsType == typeof(long)
-                    && e.Property.GetCustomAttribute<SnowflakeAttribute>(false) != null
-                    && (e.Value == null || (long)e.Value == default || (long?)e.Value == default))
-                {
-                    e.Value = YitIdHelper.NextId();
-                    return;
-                }
-            };
-
-            #region 初始化数据
-            if (fsql.Select<MenuEntity>().Any() == false)
-            {
-                List<MenuEntity> getCudButtons(params MenuEntity[] btns) => new[]
-                {
-                    new MenuEntity { Label = "添加", Path = "add", Sort = 10011, Type = MenuEntityType.按钮, },
-                    new MenuEntity { Label = "编辑", Path = "edit", Sort = 10012, Type = MenuEntityType.按钮, },
-                    new MenuEntity { Label = "删除", Path = "remove", Sort = 10013, Type = MenuEntityType.按钮, }
-                }.Concat(btns ?? new MenuEntity[0]).ToList();
-                var repo = fsql.GetAggregateRootRepository<MenuEntity>();
-                repo.Insert(new[]
-                {
-                    new MenuEntity
-                    {
-                        Label = "系统管理",
-                        Path = "",
-                        Sort = 1000,
-                        Type = MenuEntityType.菜单,
-                        Childs = new List<MenuEntity>
-                        {
-                            new MenuEntity { Label = "菜单管理", Path = "Admin/Menu", Sort = 10001, Type = MenuEntityType.菜单, Childs = getCudButtons() },
-                            new MenuEntity { Label = "角色管理", Path = "Admin/Role", Sort = 10002, Type = MenuEntityType.菜单, Childs = getCudButtons(
-                                new MenuEntity { Label = "分配用户", Path = "alloc_users", Sort = 10014, Type = MenuEntityType.按钮, },
-                                new MenuEntity { Label = "分配菜单", Path = "alloc_menus", Sort = 10015, Type = MenuEntityType.按钮, })
-                            },
-                            new MenuEntity { Label = "用户管理", Path = "Admin/User", Sort = 10003, Type = MenuEntityType.菜单, Childs = getCudButtons(
-                                new MenuEntity { Label = "分配角色", Path = "alloc_roles", Sort = 10014, Type = MenuEntityType.按钮, })
-                            },
-                            new MenuEntity { Label = "定时任务", Path = "Admin/TaskScheduler", Sort = 10004, Type = MenuEntityType.菜单, Childs = new List<MenuEntity>
-                                {
-                                    new MenuEntity { Label = "添加", Path = "add", Sort = 10011, Type = MenuEntityType.按钮, },
-                                    new MenuEntity { Label = "删除", Path = "remove", Sort = 10013, Type = MenuEntityType.按钮, },
-                                    new MenuEntity { Label = "暂停", Path = "pause", Sort = 10014, Type = MenuEntityType.按钮, },
-                                    new MenuEntity { Label = "恢复", Path = "resume", Sort = 10015, Type = MenuEntityType.按钮, },
-                                    new MenuEntity { Label = "立即触发", Path = "runnow", Sort = 10016, Type = MenuEntityType.按钮, },
-                                    new MenuEntity { Label = "查看日志", Path = "tasklog", Sort = 10017, Type = MenuEntityType.按钮, },
-                                    new MenuEntity { Label = "集群日志", Path = "clusterlog", Sort = 10018, Type = MenuEntityType.按钮, },
-                                }
-                            },
-                            new MenuEntity { Label = "数据字典", Path = "Admin/Dict", Sort = 10005, Type = MenuEntityType.菜单,Childs = getCudButtons() },
-                        }
-                    },
-                });
-            }
-            if (fsql.Select<RoleEntity>().Where(a => a.IsAdministrator).Any() == false)
-                fsql.Insert(new RoleEntity { Name = "Administrator", Description = "管理员角色", IsAdministrator = true }).ExecuteAffrows();
-            if (fsql.Select<UserEntity>().Where(a => a.Roles.Any(b => b.IsAdministrator)).Any() == false)
-            {
-                var adminUser = new UserEntity { Username = "admin", Password = "freesql", Nickname = "管理员" };
-                fsql.Insert(adminUser).ExecuteAffrows();
-                var adminRole = fsql.Select<RoleEntity>().Where(a => a.IsAdministrator).First();
-                fsql.Insert(new RoleUserEntity { UserId = adminUser.Id, RoleId = adminRole.Id }).ExecuteAffrows();
-            }
-            #endregion
-
-            return fsql;
+            var admin = r.GetService<AdminContext>();
+            return admin.Orm;
         };
-        services.AddSingleton(fsqlFactory);
+        services.AddSingleton(r => cloud);
+        services.AddScoped<AdminContext>();
+        services.AddScoped(fsqlFactory);
         services.AddScoped<UnitOfWorkManager>();
         services.AddScoped(r => new RepositoryOptions
         {
             AuditValue = e => {
-                var user = r.GetService<AdminLoginInfo>()?.User;
+                var user = r.GetService<AdminContext>()?.User;
                 if (user == null) return;
                 if (e.AuditValueType == AuditValueType.Insert &&
                     e.Object is IEntityCreated obj1 && obj1 != null)
@@ -178,7 +175,7 @@ public static class AdminExtensions
                     options.SchedulerExecuting?.Invoke(r, task);
                 })
                 .UseTimeZone(TimeSpan.FromHours(8))
-                .UseStorage(r.GetService<IFreeSql>())
+                .UseStorage(fsql)
                 .UseCustomInterval(task =>
                 {
                     var now = DateTime.UtcNow;
@@ -192,7 +189,7 @@ public static class AdminExtensions
         {
             foreach (var assembly in options.Assemblies)
             {
-                var schedulerMethods = assembly.GetTypes().SelectMany(a => a.GetMethods(BindingFlags.Static).Select(b =>
+                var schedulerMethods = assembly.GetTypes().SelectMany(a => a.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Select(b =>
                 {
                     var attr = b.GetCustomAttribute<SchedulerAttribute>();
                     if (attr == null || attr.Name.IsNull() || attr.Argument.IsNull()) return null;
@@ -215,64 +212,33 @@ public static class AdminExtensions
                         }
                     };
                 })).Where(a => a != null).ToList();
-
-                foreach (var pageType in assembly.GetTypes().Where(a => typeof(ComponentBase).IsAssignableFrom(a)))
-                {
-                    var route = pageType.GetCustomAttribute<RouteAttribute>();
-                    if (route == null) continue;
-                    var buttonAttrs = new List<string>();
-                    GetAllMembers(pageType);
-                    void GetAllMembers(Type targetType, Dictionary<Type, bool> ignore = null)
-                    {
-                        var ignoreIsNull = ignore == null;
-                        if (ignoreIsNull) ignore = new();
-                        foreach (var member in targetType.GetMembers(BindingFlags.NonPublic))
-                        {
-                            if (member.MemberType == MemberTypes.Method)
-                            {
-                                var attr = member.GetCustomAttribute<AdminButtonAttribute>();
-                                if (attr?.Name.IsNull() == false)
-                                    buttonAttrs.Add(attr.Name);
-                                continue;
-                            }
-                            var memberType = member.GetPropertyOrFieldType();
-                            if (memberType == null) continue;
-                            if (!typeof(ComponentBase).IsAssignableFrom(memberType)) continue;
-                            if (ignore.ContainsKey(memberType)) continue;
-                            ignore.Add(memberType, true);
-                            GetAllMembers(memberType);
-                        }
-                        if (ignoreIsNull) ignore.Clear();
-                    }
-                    if (buttonAttrs.Any())
-                    {
-                        ;
-                    }
-                }
                 if (schedulerMethods.Any())
                 {
-                    using (var fsql = fsqlFactory(null))
-                    {
-                        var list = fsql.Select<TaskInfo>().Where(a => a.Topic.StartsWith("[SchedulerAttribute]")).ToList();
-                        foreach (var method in schedulerMethods)
-                        {
-                            var find = list.Find(a => a.Topic == method.TaskInfo.Topic);
-                            if (find != null)
-                            {
-                                method.TaskInfo.Body = find.Body;
-                                method.TaskInfo.CreateTime = find.CreateTime;
-                                method.TaskInfo.CurrentRound = find.CurrentRound;
-                                method.TaskInfo.ErrorTimes = find.ErrorTimes;
-                                method.TaskInfo.LastRunTime = find.LastRunTime;
-                            }
-                        }
-                        var repo = fsql.GetRepository<TaskInfo>();
-                        repo.BeginEdit(list);
-                        repo.EndEdit(schedulerMethods.Select(a => a.TaskInfo).ToList());
-                    }
+                    var list = fsql.Select<TaskInfo>().Where(a => a.Topic.StartsWith("[SchedulerAttribute]")).ToList();
                     foreach (var method in schedulerMethods)
-                        schedulerAttributeTriggers[method.TaskInfo.Topic] = r =>
-                            method.Method.Invoke(null, new object[] { r });
+                    {
+                        var find = list.Find(a => a.Topic == method.TaskInfo.Topic);
+                        if (find != null)
+                        {
+                            method.TaskInfo.Id = find.Id;
+                            method.TaskInfo.Body = find.Body;
+                            method.TaskInfo.CreateTime = find.CreateTime;
+                            method.TaskInfo.CurrentRound = find.CurrentRound;
+                            method.TaskInfo.ErrorTimes = find.ErrorTimes;
+                            method.TaskInfo.LastRunTime = find.LastRunTime;
+                        }
+                        else
+                        {
+                            method.TaskInfo.Id = $"{DateTime.Now.ToString("yyyyMMdd")}.{YitIdHelper.NextId()}";
+                        }
+                    }
+                    var repo = fsql.GetRepository<TaskInfo>();
+                    repo.BeginEdit(list);
+                    repo.EndEdit(schedulerMethods.Select(a => a.TaskInfo).ToList());
+                    foreach (var method in schedulerMethods)
+                        schedulerAttributeTriggers[method.TaskInfo.Topic] = method.Method.GetParameters().Length == 0 ?
+                            r => method.Method.Invoke(null, new object[0]) :
+                            r => method.Method.Invoke(null, new object[] { r });
                 }
             }
         }
@@ -281,7 +247,6 @@ public static class AdminExtensions
 
         services.AddHttpContextAccessor();
         services.AddBootstrapBlazor();
-        services.AddScoped<AdminLoginInfo>();
         return services;
     }
 

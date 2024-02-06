@@ -15,34 +15,34 @@
                         <i class="fa fa-bars"></i>
                     </a>
                 </li>
-                @if (login.CurrentMenu != null)
+                @if (admin.CurrentMenu != null)
                 {
                     <li class="nav-item d-none d-md-block ml-3" style="line-height:1rem;margin-top:12px">
                         <ol class="breadcrumb float-sm-end m-0 p-0">
                             <li class="breadcrumb-item">首页</li>
-                            @if (login.CurrentMenu.Parent != null)
+                            @if (admin.CurrentMenu.Parent != null)
                             {
-                                <li class="breadcrumb-item">@login.CurrentMenu.Parent.Label</li>
+                                <li class="breadcrumb-item">@admin.CurrentMenu.Parent.Label</li>
                             }
-                            <li class="breadcrumb-item active" aria-current="page">@login.CurrentMenu?.Label</li>
+                            <li class="breadcrumb-item active" aria-current="page">@admin.CurrentMenu?.Label</li>
                         </ol>
                     </li>
                 }
             </ul>
-            @if (login?.User != null)
+            @if (admin?.User != null)
             {
-                <Logout ImageUrl="logo.png" DisplayName="@login.User.Username" UserName="@login.Roles.FirstOrDefault()?.Name" class="">
+                <Logout ImageUrl="logo.png" DisplayName="@admin.User.Username" UserName="@admin.Roles.FirstOrDefault()?.Name" class="">
                     <HeaderTemplate>
                         <div class="d-flex flex-fill align-items-center">
                             <img alt="avatar" src="logo.png" style="border-radius: 50%;">
                             <div class="flex-fill">
-                                <div class="logout-dn">@login.User.Username</div>
-                                <div class="logout-un">@login.Roles.FirstOrDefault()?.Description</div>
+                                <div class="logout-dn">@admin.User.Username</div>
+                                <div class="logout-un">@admin.Roles.FirstOrDefault()?.Description</div>
                             </div>
                         </div>
                     </HeaderTemplate>
                     <LinkTemplate>
-                        <a @onclick="LogoutClick" href="@AdminBlazorOptions.Global_BaseUrl/Login"><i class="fa-solid fa-key"></i><span>注销</span></a>
+                        <a @onclick="LogoutClick" href="/Admin/Login"><i class="fa-solid fa-key"></i><span>注销</span></a>
                     </LinkTemplate>
                 </Logout>
             }
@@ -51,9 +51,9 @@
 
     <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
         <div class="sidebar-brand">
-            <a href="@AdminBlazorOptions.Global_BaseUrl" class="brand-link">
+            <a href="/Admin/" class="brand-link">
                 <img src="logo.png" class="brand-image opacity-75 shadow">
-                <span class="brand-text fw-light">@AdminBlazorOptions.Global_Title</span>
+                <span class="brand-text fw-light">@admin.Tenant?.Title</span>
             </a>
         </div>
         <div class="sidebar-wrapper">
@@ -79,7 +79,7 @@
             </div>
         </div> *@
         <div class="app-content mt-3">
-            @if (login.AuthPathSuccess)
+            @if (admin.AuthPathSuccess)
             {
                 @Body
             }
@@ -98,47 +98,27 @@
 </div>
 
 @code {
-    [CascadingParameter, Inject] AdminLoginInfo login { get; set; }
+    [CascadingParameter, Inject] AdminContext admin { get; set; }
     [Inject] IHttpContextAccessor httpContextAccessor { get; set; }
 
-    void LogoutClick()
+    async Task LogoutClick()
     {
-        nav.NavigateTo($"{AdminBlazorOptions.Global_BaseUrl}/Login?LogoutToken={DesEncrypt.Encrypt("logout$$" + login.User.Username).UrlEncode()}", true);
+        await admin.SignOut();
+        admin.RedirectLogin();
     }
 
     async protected override Task OnInitializedAsync()
     {
-        var context = httpContextAccessor.HttpContext;
-        var cookie = context.Request.Cookies["login"];
-
-        login.Service = context.RequestServices;
-        if (!cookie.IsNull())
+        await admin.Init();
+        if (!await admin.AuthPath(new Uri(nav.Uri).AbsolutePath))
         {
-            if (AdminLoginInfo.TryParseCookie(context.Request.Cookies["login"], out var userId, out var loginTime) && userId > 0)
-                login.User = await fsql.Select<UserEntity>().Where(a => a.Id == userId).FirstAsync();
-            else
-                context.Response.Cookies.Delete("login");
-
-            if (login.User != null && login.User.LoginTime.Subtract(loginTime).TotalSeconds != 0)
+            if (admin.User != null)
             {
-                //被其他端登陆挤出
-                login.User = null;
-                context.Response.Cookies.Delete("login");
-                context.Response.Redirect($"{AdminBlazorOptions.Global_BaseUrl}/Login?Redirect={context.Request.GetEncodedPathAndQuery().UrlEncode()}");
-                return;
-            }
-        }
-
-        if (!await login.AuthPath(new Uri(nav.Uri).AbsolutePath))
-        {
-            if (login.User != null)
-            {
-                //context.Response.StatusCode = 403;
-                //await context.Response.WriteAsync("没有访问权限.");
+                //没有访问权限.
             }
             else
             {
-                context.Response.Redirect($"{AdminBlazorOptions.Global_BaseUrl}/Login?Redirect={context.Request.GetEncodedPathAndQuery().UrlEncode()}");
+                admin.RedirectLogin();
                 return;
             }
         }
@@ -147,13 +127,14 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        if (login.Roles?.Any() == false) await JS.Error("没有访问权限: 未分配角色.");
-        else if (!login.AuthPathSuccess) await JS.Error("没有访问权限.");
+        if (admin.Tenant == null) await JS.Error("租户信息错误.");
+        if (admin.Roles?.Any() == false) await JS.Error("没有访问权限: 未分配角色.");
+        else if (!admin.AuthPathSuccess) await JS.Error("没有访问权限.");
 
         locationChangingHandler = nav.RegisterLocationChangingHandler(async e =>
         {
             var uri = nav.ToAbsoluteUri(e.TargetLocation);
-            if (!await login.AuthPath(uri.AbsolutePath))
+            if (!await admin.AuthPath(uri.AbsolutePath))
                 await JS.Error("没有访问权限.");
         });
     }

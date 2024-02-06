@@ -18,12 +18,8 @@ public class AdminButtonAttribute
         Console.WriteLine($"AdminButton -> {Name}");
         var targetType = context.Target.GetType();
         var service = targetType.GetPropertyOrFieldValue(context.Target, "ServiceProvider") as IServiceProvider;
-        if (service == null)
-        {
-            context.Exception = new Exception($"{targetType.DisplayCsharp()} 未定义 IServiceProvider ServiceProvider {{ get; set; }}");
-            return;
-        }
-        var login = service.GetService<AdminLoginInfo>();
+        if (service == null) throw new Exception($"_Imports.razor 未使用 @inject IServiceProvider ServiceProvider");
+        var admin = service.GetService<AdminContext>();
         var JS = service.GetService<IJSRuntime>();
 
         Auth().ConfigureAwait(false).GetAwaiter().GetResult();
@@ -32,14 +28,14 @@ public class AdminButtonAttribute
         {
             if (Name == "AdminTable2_Refersh")
             {
-                if (!await login.AuthPath(login.CurrentMenu?.PathLower))
+                if (!await admin.AuthPath(admin.CurrentMenu?.PathLower))
                 {
                     _ = JS.Error("没有访问权限."); //加 await 会卡死，貌似 JSRuntime 不能回传
                 }
                 return;
             }
 
-            if (!await login.AuthButton(Name))
+            if (!await admin.AuthButton(Name))
             {
                 context.ReplaceReturnValue(this, context.RealReturnType.CreateInstanceGetDefaultValue());
                 //await service.GetService<SwalService>().ShowModal(new SwalOption()

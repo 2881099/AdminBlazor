@@ -47,16 +47,16 @@ partial class AllocTable2<TItem, TChild>
     /// </summary>
     [Parameter] public EventCallback<AdminQueryEventArgs<TChild>> OnQuery { get; set; }
 
-    [Inject] IAggregateRootRepository<TItem> repository { get; set; }
+    [Inject] IAggregateRootRepository<TItem> repo { get; set; }
 
     TableInfo metaTItem;
     TableInfo metaTChild;
     string GetTChildPrimaryValue(TChild child) => metaTChild.Primarys[0].GetValue(child).ConvertTo<string>() ?? "";
     protected override void OnInitialized()
     {
-        metaTItem = fsql.CodeFirst.GetTableByEntity(typeof(TItem));
+        metaTItem = repo.Orm.CodeFirst.GetTableByEntity(typeof(TItem));
         if (metaTItem.Primarys.Length != 1) throw new ArgumentException("AllocTable2 要求使用类型必须使用单一主键");
-        metaTChild = fsql.CodeFirst.GetTableByEntity(typeof(TChild));
+        metaTChild = repo.Orm.CodeFirst.GetTableByEntity(typeof(TChild));
         if (metaTItem.Primarys.Length != 1) throw new ArgumentException("AllocTable2 要求使用类型必须使用单一主键");
     }
     async protected override Task OnParametersSetAsync()
@@ -66,8 +66,8 @@ partial class AllocTable2<TItem, TChild>
         var childs = metaTItem.Properties[ChildProperty].GetValue(Item);
         if (childs == null)
         {
-            await new List<TItem> { Item }.IncludeByPropertyNameAsync(repository.Orm, ChildProperty);
-            repository.Attach(Item);
+            await new List<TItem> { Item }.IncludeByPropertyNameAsync(repo.Orm, ChildProperty);
+            repo.Attach(Item);
             childs = metaTItem.Properties[ChildProperty].GetValue(Item);
         }
         if (childs is IEnumerable childsEnumerable)
@@ -102,7 +102,7 @@ partial class AllocTable2<TItem, TChild>
         var childs = metaTItem.Properties[ChildProperty].GetValue(Item) as List<TChild>;
         childs.Clear();
         childs.AddRange(allItems.Values.Where(a => a.Selected).Select(a => a.Value));
-        await repository.UpdateAsync(Item);
+        await repo.UpdateAsync(Item);
         await JS.Success("保存成功！");
         await OnClose();
     }

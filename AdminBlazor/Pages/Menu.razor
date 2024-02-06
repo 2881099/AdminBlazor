@@ -58,7 +58,7 @@
                     <div class="row">
                         <div class="form-group col-6">
                             <label class="form-label">名称</label>
-                            <input @bind="item.Label" type="text" class="form-control" placeholder="" maxlength="50" data-valid="true">
+                            <input @bind="item.Label" type="text" class="form-control" placeholder="" maxlength="50" data-valid="true" disabled="@(item.Label == "系统管理")">
                         </div>
                         <div class="form-group col-6">
                             <label class="form-label">Icon</label>
@@ -68,7 +68,7 @@
                     <div class="row">
                         <div class="form-group col-12">
                             <label class="form-label">路径</label>
-                            <input @oninput="e => MenuPathChanged(e.Value.ConvertTo<string>())" @bind="item.Path" type="text" class="form-control" placeholder="Admin/Menu" maxlength="50" data-valid="true">
+                            <input @bind="item.Path" type="text" class="form-control" placeholder="Admin/Menu" maxlength="50" data-valid="true">
                         </div>
                     </div>
                     
@@ -97,7 +97,7 @@
 
 
 @code {
-    [Inject] IAggregateRootRepository<MenuEntity> repository { get; set; }
+    [Inject] IAggregateRootRepository<MenuEntity> repo { get; set; }
 
     async Task InitQuery(AdminQueryInfo e)
     {
@@ -119,7 +119,7 @@
     async Task OnEdit(MenuEntity menu)
     {
         item = menu;
-        if (menu.Parent == null && menu.ParentId > 0) menu.Parent = await repository.Where(a => a.Id == menu.ParentId).FirstAsync();
+        if (menu.Parent == null && menu.ParentId > 0) menu.Parent = await repo.Where(a => a.Id == menu.ParentId).FirstAsync();
     }
     void ParentChanged(MenuEntity parent)
     {
@@ -127,16 +127,6 @@
         {
             item.Path = parent.Path + "/xx";
             item.PathLower = item.Path.ToLower();
-        }
-    }
-    void MenuPathChanged(string path)
-    {
-        path = path.Trim('/');
-        if (item.Path != path)
-        {
-            item.Path = path;
-            item.PathLower = item.Path.ToLower();
-            StateHasChanged();
         }
     }
     void MenuEntityTypeChanged(MenuEntityType type)
@@ -175,7 +165,7 @@
     }
     async Task OnRemove(List<MenuEntity> list)
     {
-        await list.IncludeManyAsync(repository.Orm, a => a.Childs);
+        await list.IncludeManyAsync(repo.Orm, a => a.Childs);
     }
 
     MenuEntity menuDesign;

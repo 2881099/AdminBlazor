@@ -9,6 +9,9 @@ namespace BootstrapBlazor.Components;
 
 partial class AdminTable2Design
 {
+    [Inject] FreeSqlCloud cloud { get; set; }
+    IFreeSql fsql => cloud.Use("main");
+
     [Parameter] public MenuEntity Menu { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     List<TableInfo> tableDescrptors;
@@ -166,19 +169,36 @@ partial class AdminTable2Design
             CanEdit = !new[]
             {
                 typeof(IEntity<long>),
+                typeof(IEntity<string>),
+                typeof(IEntity<Guid>),
+
                 typeof(Entity<long>),
+                typeof(Entity<string>),
+                typeof(Entity<Guid>),
+
                 typeof(IEntityCreated),
-                typeof(EntityCreated<long>),
                 typeof(EntityCreated),
+                typeof(EntityCreated<long>),
+                typeof(EntityCreated<string>),
+                typeof(EntityCreated<Guid>),
+
                 typeof(IEntityModified),
-                typeof(EntityModified<long>),
                 typeof(EntityModified),
+                typeof(EntityModified<long>),
+                typeof(EntityModified<string>),
+                typeof(EntityModified<Guid>),
+
                 typeof(IEntitySoftDelete),
-                typeof(EntitySoftDelete<long>),
                 typeof(EntitySoftDelete),
+                typeof(EntitySoftDelete<long>),
+                typeof(EntitySoftDelete<string>),
+                typeof(EntitySoftDelete<Guid>),
+
+                typeof(EntityFull),
                 typeof(EntityFull<long>),
-                typeof(EntityFull)
-            }.Contains(a.Table.Properties[a.CsName].DeclaringType)
+                typeof(EntityFull<string>),
+                typeof(EntityFull<Guid>),
+            }.Contains(a.Table.Properties[a.CsName].DeclaringType) || a.Attribute.IsPrimary && a.CsType == typeof(string)
         };
         if (a.Attribute.IsPrimary && a.Attribute.MapType.NullableTypeOrThis() == typeof(Guid) ||
             a.Attribute.IsIdentity ||

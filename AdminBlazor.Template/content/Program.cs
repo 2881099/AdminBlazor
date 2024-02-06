@@ -1,7 +1,9 @@
 ﻿using AdminBlazor.Template.Components;
 using BootstrapBlazor.Components;
+using FreeScheduler;
 using FreeSql;
 using LinCms.Entities.Blog;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +13,8 @@ builder.Services.AddAdminBlazor(new AdminBlazorOptions
     FreeSqlBuilder = a => a
         .UseConnectionString(DataType.Sqlite, @"Data Source=freedb.db")
         .UseMonitorCommand(cmd => System.Console.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss")}] {cmd.CommandText}\r\n"))//监听SQL语句
-        .UseAutoSyncStructure(true) //自动同步实体结构到数据库，FreeSql不会扫描程序集，只有CRUD时才会生成表。
+        .UseAutoSyncStructure(true), //自动同步实体结构到数据库，FreeSql不会扫描程序集，只有CRUD时才会生成表。
+    SchedulerExecuting = OnSchedulerExecuting //定时任务-自定义触发
 });
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -21,12 +24,13 @@ var app = builder.Build();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
+app.UseBootstrapBlazor();
 app.MapRazorComponents<App>()
     .AddAdditionalAssemblies(typeof(AdminBlazorOptions).Assembly)
     .AddInteractiveServerRenderMode();
 
 #region 博客示例测试数据
-var fsql = app.Services.GetService<IFreeSql>();
+var fsql = app.Services.GetService<FreeSqlCloud>();
 if (!fsql.Select<Classify>().Any() &&
     !fsql.Select<MenuEntity>().Any(a => new[]
     {
@@ -143,3 +147,27 @@ if (!fsql.Select<Classify>().Any() &&
 #endregion
 
 app.Run();
+
+//自定义触发
+static void OnSchedulerExecuting(IServiceProvider service, TaskInfo task)
+{
+    switch (task.Topic)
+    {
+        case "武林大会":
+            //todo..
+            break;
+        case "攻城活动":
+            //todo..
+            break;
+    }
+}
+[Scheduler("任务1", "0/30 * * * * *")]
+static void Scheduler001()
+{
+    System.Console.WriteLine("任务1 被触发...");
+}
+[Scheduler("任务2", "0/15 * * * * *")]
+static void Scheduler002(IServiceProvider service)
+{
+    System.Console.WriteLine("任务2 被触发...");
+}

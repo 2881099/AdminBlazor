@@ -3,13 +3,6 @@
 <div class="modal fade draggable " id="@ClientId" data-bs-backdrop="@(IsBackdropStatic ? "static" : "true")" data-bs-keyboard="@(IsKeyboard ? "true" : "false")" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog @DialogClassName modal-dialog-scrollable">
         <div class="modal-content">
-            @if (overlay)
-            {
-                <div class="overlay">
-                    <i class="fas fa-2x fa-sync fa-spin"></i>
-                </div>
-            }
-
             <div class="modal-header">
                 <h4 class="modal-title">@Title</h4>
                 <button type="button" class="close" aria-label="Close" @onclick="Hide">
@@ -17,7 +10,10 @@
                 </button>
             </div>
             <div class="modal-body">
-                @ChildContent
+                @if (Visible)
+                {
+                    @ChildContent
+                }
             </div>
             @if (OnYes.HasDelegate)
             {
@@ -36,7 +32,7 @@
     [Parameter] public bool IsBackdropStatic { get; set; } = true;
     [Parameter] public bool IsKeyboard { get; set; } = true;
 
-    async Task Show() => await JS.InvokeVoidAsync("adminBlazorJS.modalShow", $"#{ClientId}", DotNetObjectReference.Create(this));
+    async Task Show() => await JS.InvokeVoidAsync("adminBlazorJS.modalShow", $"{ClientId}", DotNetObjectReference.Create(this));
     [JSInvokable]
     async public Task ModalOnClose()
     {
@@ -82,18 +78,8 @@
     [Parameter] public EventCallback OnYes { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
-    bool overlay = false;
     async Task YesClick()
     {
-        overlay = true;
-        try
-        {
-            if (OnYes.HasDelegate) await OnYes.InvokeAsync();
-            await Hide();
-        }
-        finally
-        {
-            overlay = false;
-        }
+        if (OnYes.HasDelegate) await OnYes.InvokeAsync();
     }
 }

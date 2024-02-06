@@ -5,15 +5,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-    <link href="_content/AdminBlazor/adminlte_bb.css" rel="stylesheet" />
+    <link href="_content/AdminBlazor/adminlte_bb.css?v1_1_5" rel="stylesheet" />
     <link rel="icon" href="logo.png" type="image/gif" />
     <HeadOutlet @rendermode="@InteractiveServer" />
 </head>
 <body>
 
-    <Routes @rendermode="@InteractiveServer" />
+    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
 
-    <script src="_content/AdminBlazor/adminlte_bb.js"></script>
+    <script src="_content/AdminBlazor/adminlte_bb.js?v1_1_5"></script>
     <script src="_framework/blazor.web.js"></script>
 
 </body>

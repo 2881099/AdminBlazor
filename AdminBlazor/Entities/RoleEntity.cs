@@ -11,10 +11,12 @@ namespace BootstrapBlazor.Components
         /// <summary>
         /// 名称
         /// </summary>
+        [Column(StringLength = 50)]
         public string Name { get; set; }
         /// <summary>
         /// 描述
         /// </summary>
+        [Column(StringLength = 500)]
         public string Description { get; set; }
         /// <summary>
         /// 系统

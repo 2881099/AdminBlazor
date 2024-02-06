@@ -29,11 +29,11 @@
                     <div class="row">
                         <div class="form-group col-12">
                             <label class="form-label">名称</label>
-                            <input @bind="item.Name" type="text" class="form-control" placeholder="" maxlength="255">
+                            <input @bind="item.Name" type="text" class="form-control" placeholder="" maxlength="50">
                         </div>
                         <div class="form-group col-12">
                             <label class="form-label">描述</label>
-                            <input @bind="item.Description" type="text" class="form-control" placeholder="" maxlength="255">
+                            <input @bind="item.Description" type="text" class="form-control" placeholder="" maxlength="500">
                         </div>
                     </div>
                 </EditTemplate> 
@@ -46,13 +46,15 @@
     <TableTd1>@context.Username</TableTd1>
 </AllocTable2>
 
-<AllocTable2 TItem="RoleEntity" TChild="MenuEntity" @bind-Item="@allocItemMenus" ChildProperty="Menus" Title="@($"【分配菜单】{allocItemMenus?.Name}")">
+<AllocTable2 TItem="RoleEntity" TChild="MenuEntity" @bind-Item="@allocItemMenus" ChildProperty="Menus" Title="@($"【分配菜单】{allocItemMenus?.Name}")" 
+    OnQuery="BeginAllocMenusOnQuery">
     <TableTd1>@context.Label</TableTd1>
 </AllocTable2>
 
 @code {
 
-    [Inject] IAggregateRootRepository<RoleEntity> repository { get; set; }
+    [Inject] AdminContext admin { get; set; }
+    [Inject] IAggregateRootRepository<RoleEntity> repo { get; set; }
 
     async Task InitQuery(AdminQueryInfo e)
     {
@@ -79,4 +81,10 @@
     RoleEntity allocItemMenus;
     [AdminButton("alloc_menus")]
     void BeginAllocMenus(RoleEntity item) => allocItemMenus = item;
+    void BeginAllocMenusOnQuery(AdminQueryEventArgs<MenuEntity> e)
+    {
+        var menuIds = admin.RoleMenus.Select(b => b.Id);
+        e.Select.WhereIf(admin.Tenant.Id != "main", a => menuIds.Contains(a.Id))
+            .OrderBy(a => a.Sort);
+    }
 }

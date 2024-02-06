@@ -75,7 +75,7 @@
 
 @code {
 
-    [Inject] IAggregateRootRepository<UserLike> repository { get; set; }
+    [Inject] IAggregateRootRepository<UserLike> repo { get; set; }
 
     async Task InitQuery(AdminQueryInfo e)
     {

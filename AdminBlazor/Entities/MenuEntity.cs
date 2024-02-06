@@ -19,15 +19,19 @@ namespace BootstrapBlazor.Components
         /// <summary>
         /// 名称
         /// </summary>
+        [Column(StringLength = 50)]
         public string Label { get; set; }
         /// <summary>
         /// 图标
         /// </summary>
+        [Column(StringLength = 50)]
         public string Icon { get; set; }
         /// <summary>
         /// 路径
         /// </summary>
+        [Column(StringLength = 50)]
         public string Path { get; set; }
+        [Column(StringLength = 50)]
         public string PathLower { get; set; }
         /// <summary>
         /// 新窗口打开

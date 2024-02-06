@@ -93,7 +93,7 @@
                 <tbody>
                     @if (is1r4c)
                     {
-                        if (treeNav.Key.IsNull())
+                        if (treeNav.Key.IsNull() || !items.Any(a => a.Level > 1))
                         {
                             @* 一行四列 *@
                             for (var x = 0; x < items.Count; x += Colspan)
@@ -231,19 +231,21 @@
                                     @if (TableTd99 != null || IsEdit || IsRemove)
                                     {
                                         <td @onclick:stopPropagation="true">
-                                            @if (TableTd99 != null)
-                                            {
-                                                @TableTd99(opt.Value)
-                                            }
-                                            @if (IsEdit)
-                                            {
-                                                <button @onclick="e => BeginEdit(opt?.Value)" type="button" class="mr-2 btn btn-light btn-xs"><i class="fa fa-edit"></i>编辑</button>
-                                            }
+                                            <div class="btn-toolbar">
+                                                @if (TableTd99 != null)
+                                                {
+                                                    @TableTd99(opt.Value)
+                                                }
+                                                @if (IsEdit)
+                                                {
+                                                    <button @onclick="e => BeginEdit(opt?.Value)" type="button" class="mr-2 btn btn-light btn-xs"><i class="fa fa-edit"></i>编辑</button>
+                                                }
 
-                                            @if (IsRemove && IsRowRemove)
-                                            {
-                                                <button @onclick="e => Delete(opt.Value)" type="button" class="btn btn-light btn-xs"><i class="far fa-trash-alt"></i>删除</button>
-                                            }
+                                                @if (IsRemove && IsRowRemove)
+                                                {
+                                                    <button @onclick="e => Delete(opt.Value)" type="button" class="btn btn-light btn-xs"><i class="far fa-trash-alt"></i>删除</button>
+                                                }
+                                            </div>
                                         </td>
                                     }
                                 </tr>
@@ -276,19 +278,21 @@
                                     @if (TableTd99 != null || IsEdit || IsRemove)
                                     {
                                         <td @onclick:stopPropagation="true">
-                                            @if (TableTd99 != null)
-                                            {
-                                                @TableTd99(opt.Value)
-                                            }
-                                            @if (IsEdit)
-                                            {
-                                                <button @onclick="e => BeginEdit(opt?.Value)" type="button" class="mr-2 btn btn-light btn-xs"><i class="fa fa-edit"></i>编辑</button>
-                                            }
+                                            <div class="btn-toolbar">
+                                                @if (TableTd99 != null)
+                                                {
+                                                    @TableTd99(opt.Value)
+                                                }
+                                                @if (IsEdit)
+                                                {
+                                                    <button @onclick="e => BeginEdit(opt?.Value)" type="button" class="mr-2 btn btn-light btn-xs"><i class="fa fa-edit"></i>编辑</button>
+                                                }
 
-                                            @if (IsRemove && IsRowRemove)
-                                            {
-                                                <button @onclick="e => Delete(opt.Value)" type="button" class="btn btn-light btn-xs"><i class="far fa-trash-alt"></i>删除</button>
-                                            }
+                                                @if (IsRemove && IsRowRemove)
+                                                {
+                                                    <button @onclick="e => Delete(opt.Value)" type="button" class="btn btn-light btn-xs"><i class="far fa-trash-alt"></i>删除</button>
+                                                }
+                                            </div>
                                         </td>
                                     }
                                 </tr>

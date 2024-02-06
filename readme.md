@@ -1,8 +1,8 @@
 ## 项目介绍
 
-AdminBlazor 是一款 Blazor SSR 后台管理项目，支持 RABC 权限菜单/按钮，支持一对一、一对多、多对多代码生成 .razor 界面。
+AdminBlazor 是一款 Blazor Server SaaS 后台管理项目，支持 RABC 权限菜单/按钮，支持一对一、一对多、多对多代码生成 .razor 界面。
 
-集成功能：菜单管理、角色管理、用户管理、定时任务、字典管理
+集成功能：菜单、角色、用户、定时任务、数据字典、租户
 
 依赖组件：BootstrapBlazor、FreeSql、FreeScheduler、Rougamo
 
@@ -36,18 +36,18 @@ AdminBlazor 是一款 Blazor SSR 后台管理项目，支持 RABC 权限菜单/�
 
 ## 权限
 
-- UserEntity 对多对 RoleEntity
-- RoleEntity 对多对 MenuEntity
+- UserEntity 多对多 RoleEntity
+- RoleEntity 多对多 MenuEntity
 
-提示：AdminLoginInfo 类型已设置成 \[CascadeParameter\]
+提示：AdminContext 类型已设置成 \[CascadeParameter\]
 
 ```csharp
-class AdminLoginInfo
+class AdminContext
 {
-    public IServiceProvider Service { get; internal set; }
+    public IServiceProvider Service { get; }
     public UserEntity User { get; set; }
-    public List<RoleEntity> Roles { get; private set; }
-    public List<MenuEntity> RoleMenus { get; private set; }
+    public List<RoleEntity> Roles { get; }
+    public List<MenuEntity> RoleMenus { get; }
 
     //路由、按钮权限验证
     public Task<bool> AuthPath(string path);
@@ -68,11 +68,47 @@ void ButtonClick()
 
 ![image](Images/03.png)
 
-## 二次开发
+## 租户
 
+提示：AdminContext 类型已设置成 \[CascadeParameter\]
 
+```csharp
+class AdminContext
+{
+    public IServiceProvider Service { get; }
+    public TenantEntity Tenant { get; }
+}
+```
+
+每个租户独立数据库，注入方式：
+
+- 访问租户：IFreeSql/IAggregateRootRepository\<T\>
+- 访问主库：FreeSqlCloud
+
+> FreeSqlCloud API 访问方式与 IFreeSql 一样
+> IAggregateRootRepository 是级联操作友好的仓储模式
+
+![image](Images/04.png)
+
+## 定时任务
+
+```csharp
+[Scheduler("任务1", "0/30 * * * * *")]
+static void Scheduler001()
+{
+    System.Console.WriteLine("任务1 被触发...");
+}
+
+[Scheduler("任务2", "0/15 * * * * *")]
+static void Scheduler002(IServiceProvider service)
+{
+    System.Console.WriteLine("任务2 被触发...");
+}
+```
 
 ## 组件
+
+以下几个是 AdminBlazor 封装的组件，更多丰富的 UI 组件可以看：BootstrapBlazor
 
 ### 1. 增删改查 AdminTable2\<TItem\>
 

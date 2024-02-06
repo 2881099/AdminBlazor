@@ -25,11 +25,7 @@ public class TransactionalAttribute : Rougamo.MoAttribute
 	{
         var targetType = context.Target.GetType();
         var service = targetType.GetPropertyOrFieldValue(context.Target, "ServiceProvider") as IServiceProvider;
-        if (service == null)
-        {
-            context.Exception = new Exception($"{targetType.DisplayCsharp()} 未定义 IServiceProvider ServiceProvider {{ get; set; }}");
-            return;
-        }
+        if (service == null) throw new Exception($"_Imports.razor 未使用 @inject IServiceProvider ServiceProvider");
 
         var uowManager = service.GetService<UnitOfWorkManager>();
 		_uow = uowManager.Begin(this.Propagation, this.m_IsolationLevel);

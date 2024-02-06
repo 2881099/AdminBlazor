@@ -15,6 +15,7 @@ namespace BootstrapBlazor.Components
         /// <summary>
         /// 编码
         /// </summary>
+        [Column(StringLength = 50)]
         public string Name { get; set; }
 
         /// <summary>

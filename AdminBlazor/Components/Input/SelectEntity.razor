@@ -4,6 +4,14 @@
 @using FreeSql.Internal.Model
 
 <select @oninput="OnInput" @bind="@Value" class="form-control" disabled="@Disabled">
+    @if (TKeyDefaultValue == null)
+    {
+        <option value>请选择..</option>
+    }
+    else
+    {
+        <option value="@TKeyDefaultValue">请选择..</option>
+    }
     @if (items != null)
     {
         foreach (var t in items)
@@ -17,10 +25,14 @@
     List<AdminItem<TItem>> items;
     ColumnInfo firstStringColumn;
     [Parameter] public TKey Value { get; set; }
+    object TKeyDefaultValue = default(TKey);
     [Parameter] public Func<TItem, string> DisplayText { get; set; }
     [Parameter] public EventCallback<TKey> ValueChanged { get; set; }
     [Parameter] public EventCallback<TKey> OnValueChanged { get; set; }
+    [Parameter] public List<TItem> Source { get; set; }
     [Parameter] public bool Disabled { get; set; }
+
+    [Inject] IFreeSql fsql { get; set; }
 
     TableInfo metaTItem;
     object GetPrimaryValue(TItem item) => metaTItem.Primarys[0].GetValue(item);
@@ -42,8 +54,12 @@
     {
         if (!firstRender) return;
         firstStringColumn = fsql.CodeFirst.GetTableByEntity(typeof(TItem)).ColumnsByPosition.FirstOrDefault(a => a.CsType == typeof(string));
-        var objs = await fsql.Select<object>().AsType(typeof(TItem)).ToListAsync();
-        items = objs.Select(a => (TItem)a).ToList().ToAdminItemList(fsql);
+        if (Source == null)
+        {
+            var objs = await fsql.Select<object>().AsType(typeof(TItem)).ToListAsync();
+            Source = objs.Select(a => (TItem)a).ToList();
+        }
+        items = Source.ToAdminItemList(fsql);
         StateHasChanged();
     }
 }

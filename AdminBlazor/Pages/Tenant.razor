@@ -1,0 +1,181 @@
+@page "/Admin/Tenant"
+@using BootstrapBlazor.Components
+@using System
+
+<PageTitle>租户</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <AdminTable2 TItem="TenantEntity" Context="item" PageSize="20" Title="租户" DialogClassName="modal-lg" TableTd99Width="250"
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnEditFinish="OnEditFinish">
+
+                <TableHeader>
+                    <th>名称</th>
+                    <th>数据库</th>
+                    <th>域名</th>
+                    <th>标题</th>
+                    <th>是否启用</th>
+                    <th>创建时间</th>
+                </TableHeader>
+                <TableRow>
+                    <td>@item.Id</td>
+                    <td>@item.Database?.Label</td>
+                    <td>@item.Host</td>
+                    <td>@item.Title</td>
+                    <td>@(item.IsEnabled ? "是" : "否")</td>
+                    <td>@item?.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </TableRow>
+                <TableTd99>
+                    <button @onclick="e => BeginModifyPassword(item)" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-rotate-right"></i> 修改密码</button>
+                </TableTd99>
+                <EditTemplate>
+                    <div class="row">
+                        <div class="form-group col-6">
+                            <label class="form-label">名称</label>
+                            <input @bind="item.Id" type="text" class="form-control" placeholder="" maxlength="50" disabled="@(item.Id == "main")">
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="form-label">是否启用</label>
+                            <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" IsDisabled="@(item.Id == "main")" />
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">域名</label>
+                            <input @bind="item.Host" type="text" class="form-control" placeholder="" maxlength="50">
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">标题</label>
+                            <input @bind="item.Title" type="text" class="form-control" placeholder="" maxlength="255">
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">说明</label>
+                            <textarea @bind="item.Description" class="form-control" placeholder="" maxlength="500"></textarea>
+                        </div>
+                        @if (item.Id != "main")
+                        {
+                            <div class="form-group col-12">
+                                <label class="form-label">数据库</label>
+                                <SelectEntity TItem="TenantDatabaseEntity" TKey="long" @bind-Value="item.DatabaseId" DisplayText="e => e.DataType.ToString() + '|' + e.Label" />
+                            </div>
+                            <div class="form-group col-12">
+                                <label class="form-label">菜单</label>
+                                <SelectTable2 TItem="MenuEntity" TKey="long" @bind-Items="item.Menus" IsSearchText="false" PageSize="-1"
+                                    OnQuery="OnEditMenuOnQuery">
+                                    @context.Label
+                                </SelectTable2>
+                            </div>
+                        }
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+<AdminModal Visible="modifyPasswordItem != null" Title="@($"【修改密码】{modifyPasswordItem?.Title}")" OnYes="ModifyPasswordFinish"
+    OnClose="e => { modifyPasswordItem = null; modifyPassword = null; }">
+    <div class="row">
+        <div class="form-group col-12">
+            <label class="form-label">账号</label>
+            <input @bind="modifyUsername" type="text" class="form-control" placeholder="" maxlength="50">
+        </div>
+        <div class="form-group col-12">
+            <label class="form-label">密码</label>
+            <input @bind="modifyPassword" type="text" class="form-control" placeholder="" maxlength="50">
+        </div>
+    </div>
+</AdminModal>
+
+@code {
+    [Inject] AdminContext admin { get; set; }
+    [Inject] IAggregateRootRepository<TenantEntity> repo { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        var allTenantDatabases = await repo.Orm.Select<TenantDatabaseEntity>().ToListAsync();
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("数据库", "DatabaseId", true, 12, 
+                string.Join(",", allTenantDatabases.Select(a => $"[{a.DataType}]{a.Label}")), 
+                string.Join(",", allTenantDatabases.Select(a => a.Id))),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<TenantEntity> e)
+    {
+        e.Select.Include(a => a.Database)
+            .WhereIf(e.Filters[0].HasValue, a => e.Filters[0].Values<long>().Contains(a.DatabaseId))
+            .WhereIf(!e.SearchText.IsNull(), a => a.Id.Contains(e.SearchText) || 
+                a.Host.Contains(e.SearchText) || 
+                a.Title.Contains(e.SearchText) || 
+                a.Description.Contains(e.SearchText));
+    }
+    async Task OnEditMenuOnQuery(AdminQueryEventArgs<MenuEntity> e)
+    {
+        var menuIds = (await admin.GenerateTenantMenus(editItem.Id, true)).Select(a => a.Id);
+        e.Select.Where(a => menuIds.Contains(a.Id)).OrderBy(a => a.Sort);
+    }
+    TenantEntity editItem;
+    async Task OnEdit(TenantEntity item)
+    {
+        editItem = item;
+        if (item.Menus == null)
+        {
+            if (item.Id == default) item.Menus = new();
+            else await new List<TenantEntity> { item }.IncludeManyAsync(repo.Orm, a => a.Menus);
+            repo.Attach(item);
+        }
+        await Task.Yield();
+    }
+    async Task OnEditFinish(TenantEntity item)
+    {
+        var fsql = admin.GetTenantFreeSql(item.Id);
+        if (await fsql.Select<RoleEntity>().Where(a => a.IsAdministrator).AnyAsync() == false)
+            await fsql.Insert(new RoleEntity { Name = "Administrator", Description = "管理员角色", IsAdministrator = true }).ExecuteAffrowsAsync();
+        if (await fsql.Select<UserEntity>().Where(a => a.Roles.Any(b => b.IsAdministrator)).AnyAsync() == false)
+        {
+            var adminUser = new UserEntity { Username = "admin", Password = "freesql", Nickname = "管理员" };
+            adminUser.Roles = [await fsql.Select<RoleEntity>().Where(a => a.IsAdministrator).FirstAsync()];
+            await fsql.GetAggregateRootRepository<UserEntity>().InsertAsync(adminUser);
+        }
+        if (item.Id != "main")
+        {
+                var repoMenu = fsql.GetRepository<MenuEntity>();
+                repoMenu.BeginEdit(await fsql.Select<MenuEntity>().ToListAsync());
+                repoMenu.EndEdit(await admin.GenerateTenantMenus(item.Id));
+        }
+    }
+
+    TenantEntity modifyPasswordItem;
+    string modifyUsername, modifyPassword;
+    async Task BeginModifyPassword(TenantEntity item)
+    {
+        var fsql = admin.GetTenantFreeSql(item.Id);
+        modifyUsername = await fsql.Select<UserEntity>().Where(a => a.Roles.Any(b => b.IsAdministrator)).FirstAsync(a => a.Username);
+        modifyPassword = null;
+        modifyPasswordItem = item;
+    }
+    async Task ModifyPasswordFinish()
+    {
+        if (modifyUsername.IsNull() || modifyPassword.IsNull())
+        {
+            await JS.Error("账号或密码不能为空!");
+            return;
+        }
+        var fsql = admin.GetTenantFreeSql(modifyPasswordItem.Id);
+        var user = await fsql.Select<UserEntity>().Where(a => a.Username == modifyUsername).FirstAsync();
+        if (user == null)
+        {
+            await JS.Error("账号不存在!");
+            return;
+        }
+        await fsql.Update<UserEntity>()
+            .Where(a => a.Id == user.Id)
+            .Set(a => a.Password, modifyPassword)
+            .Set(a => a.LoginTime, DateTime.Now)
+            .ExecuteAffrowsAsync();
+        await JS.Success("密码修改成功!");
+        modifyPasswordItem = null;
+    }
+}

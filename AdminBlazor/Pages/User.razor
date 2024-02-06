@@ -10,14 +10,16 @@
                 
                 OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
+                <CardHeader>
+                    <button @onclick="ShowUserLogin" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-camera"></i> 登陆日志</button>
+                </CardHeader>
+
                 <TableHeader>
                     <th>名称</th>
                     <th>昵称</th>
                     <th>登陆时间</th>
                     <th>创建时间</th>
                     <th>角色</th>
-                    <th>年龄</th>
-                    <th>籍贯</th>
                 </TableHeader>
                 <TableRow>
                     <td>@item.Username</td>
@@ -25,8 +27,6 @@
                     <td>@item.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
                     <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
                     <td>@string.Join(", ", item.Roles.Select(a => a.Name))</td>
-                    <td>@item.UserExt?.Age</td>
-                    <td>@item.UserExt?.Whois</td>
                 </TableRow>
                 <TableTd99>
                     <button @onclick="e => BeginAllocRoles(item)" type="button" class="mr-2 btn btn-light btn-xs"><i class="fa fa-user-secret"></i>分配角色</button>
@@ -35,32 +35,18 @@
                     <div class="row">
                         <div class="form-group col-6">
                             <label class="form-label">名称</label>
-                            <input @bind="item.Username" type="text" class="form-control" placeholder="" maxlength="255">
+                            <input @bind="item.Username" type="text" class="form-control" placeholder="" maxlength="50">
                         </div>
                         <div class="form-group col-6">
                             <label class="form-label">昵称</label>
-                            <input @bind="item.Nickname" type="text" class="form-control" placeholder="" maxlength="255">
+                            <input @bind="item.Nickname" type="text" class="form-control" placeholder="" maxlength="50">
                         </div>
                         <div class="form-group col-6">
                             <label class="form-label">密码</label>
-                            <input @bind="item.Password" type="text" class="form-control" placeholder="" maxlength="255">
+                            <input @bind="item.Password" type="text" class="form-control" placeholder="" maxlength="50">
                         </div>
-                        <div class="form-group col-12">
-                            <blockquote class="quote-info m-0 p-0 mt-2 pl-2"><h5>用户扩展</h5></blockquote>
-                        </div>
-                        @if (item.UserExt != null)
-                        {
-                            <div class="form-group col-6">
-                                <label class="form-label">年龄</label>
-                                <input @bind="item.UserExt.Age" type="number" class="form-control" placeholder="">
-                            </div>
-                            <div class="form-group col-6">
-                                <label class="form-label">籍贯</label>
-                                <input @bind="item.UserExt.Whois" type="text" class="form-control" placeholder="" maxlength="255">
-                            </div>
-                        }
                     </div>
-                </EditTemplate> 
+                </EditTemplate>
             </AdminTable2>
         </div>
     </div>
@@ -70,13 +56,43 @@
     <TableTd1>@context.Name</TableTd1>
 </AllocTable2>
 
+<AdminModal Visible="showUserLogin" Title="登陆日志" OnClose="e => showUserLogin = false" DialogClassName="modal-xxl">
+    <AdminTable2 TItem="UserLoginEntity" Context="item" PageSize="20"
+        IsAdd="false" IsEdit="false" IsRemove="false" IsSingleSelect="false" IsMultiSelect="false"
+        OnQuery="OnQueryUserLogin" InitQuery="InitQueryUserLogin">
+
+        <TableHeader>
+            <th>登陆时间</th>
+            <th>用户名</th>
+            <th>日志类型</th>
+            <th>IP</th>
+            <th>地点</th>
+            <th>操作系统</th>
+            <th>设备类型</th>
+            <th>浏览器</th>
+            <th>浏览器语言</th>
+        </TableHeader>
+        <TableRow>
+            <td>@item.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            <td>@item.Username</td>
+            <td>@item.Type</td>
+            <td>@item.Ip</td>
+            <td>@item.City</td>
+            <td>@item.OS</td>
+            <td>@item.Device</td>
+            <td>@item.Browser</td>
+            <td>@item.Language</td>
+        </TableRow>
+    </AdminTable2>
+</AdminModal>
+
 @code {
 
-    [Inject] IAggregateRootRepository<UserEntity> repository { get; set; }
+    [Inject] IAggregateRootRepository<UserEntity> repo { get; set; }
 
     async Task InitQuery(AdminQueryInfo e)
     {
-        var allRoleEntities = await fsql.Select<RoleEntity>().ToListAsync();
+        var allRoleEntities = await repo.Orm.Select<RoleEntity>().ToListAsync();
         e.Filters = new AdminFilterInfo[]
         {
             new AdminFilterInfo("角色", "Roles", true, 12, 
@@ -89,13 +105,11 @@
     {
         e.Select.IncludeMany(a => a.Roles)
             .WhereIf(e.Filters[0].HasValue, a => a.Roles.Any(b => e.Filters[0].Values<long>().Contains(b.Id)))
-            .Include(a => a.UserExt)
-            .WhereIf(!e.SearchText.IsNull(), a => a.UserExt.Whois.Contains(e.SearchText));
+            .WhereIf(!e.SearchText.IsNull(), a => a.Username.Contains(e.SearchText) || a.Nickname.Contains(e.SearchText));
     }
 
     async Task OnEdit(UserEntity item)
     {
-        if (item.UserExt == null) item.UserExt = new();
         await Task.Yield();
     }
     UserEntity allocItemRoles;
@@ -104,5 +118,29 @@
     {
         allocItemRoles = item;
         await Task.Yield();
+    }
+
+
+    bool showUserLogin;
+    [AdminButton("登陆日志")]
+    void ShowUserLogin()
+    {
+        showUserLogin = true;
+    }
+    async Task InitQueryUserLogin(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("日志", "Type", "登陆成功,登陆失败", "0,1"),
+            new AdminFilterInfo("设备", "Device", "PC,Mobile,Tablet", "0,1,2"),
+        };
+        await Task.Yield();
+    }
+    void OnQueryUserLogin(AdminQueryEventArgs<UserLoginEntity> e)
+    {
+        e.Select.WhereIf(e.Filters[0].HasValue, a => a.Type == e.Filters[0].Value<UserLoginEntity.LoginType>())
+            .WhereIf(e.Filters[1].HasValue, a => a.Device == e.Filters[1].Value<WebClientDeviceType>())
+            .WhereIf(!e.SearchText.IsNull(), a => a.Ip.Contains(e.SearchText) || a.Username.Contains(e.SearchText))
+            .OrderByDescending(a => a.Id);
     }
 }

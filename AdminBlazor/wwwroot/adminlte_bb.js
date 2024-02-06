@@ -27,13 +27,25 @@ var adminBlazorJS = {
         else
             bd.removeClass('sidebar-collapse').addClass('sidebar-open')
     },
-    modalShow: function (selector, dotnetRef) {
-        var ele = $(selector);
+    modalShow: function (id, dotnetRef) {
+        var ele = $('#' + id);
         ele.modal('show');
-        ele.on('hidden.bs.modal', event => {
+        ele.on('hidden.bs.modal', e => {
+            debugger
+            if (id != e.target.id) return
             dotnetRef.invokeMethodAsync('ModalOnClose')
         })
     },
+    setCookie: function (name, value, expireDays) {
+        var cookie = decodeURIComponent(name) + "=" + decodeURIComponent(value);
+        if (expireDays > 0) {
+            var d = new Date();
+            d.setTime(d.getTime() + (expireDays * 24 * 60 * 60 * 1000));
+            cookie += ";expires=" + d.toUTCString();
+        }
+        cookie += ";path=/";
+        document.cookie = cookie;
+    }
 };
 $(document.body).ready(function () {
     if (window.innerWidth < 500) {

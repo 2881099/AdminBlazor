@@ -72,7 +72,7 @@
 
 @code {
 
-    [Inject] IAggregateRootRepository<Channel> repository { get; set; }
+    [Inject] IAggregateRootRepository<Channel> repo { get; set; }
 
     async Task InitQuery(AdminQueryInfo e)
     {

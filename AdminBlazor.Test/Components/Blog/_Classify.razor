@@ -55,7 +55,7 @@
 
 @code {
 
-    [Inject] IAggregateRootRepository<Classify> repository { get; set; }
+    [Inject] IAggregateRootRepository<Classify> repo { get; set; }
 
     async Task InitQuery(AdminQueryInfo e)
     {

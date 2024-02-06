@@ -45,7 +45,7 @@ class GenTableDesign
 {
     public GenTableInfo Table;
     public bool IsTreeNav;
-    public List<GenColumnDesign> ColumnDesigns { get; set; } = new();
+    public List<GenColumnDesign> ColumnDesigns = new();
     public List<GenNavigateDesign> OneToOnes = new();
     public List<GenNavigateDesign> ManyToManys = new();
     public List<GenNavigateDesign> OneToManys = new();
@@ -87,7 +87,7 @@ class GenNavigateDesign
 
     public List<GenColumnDesign> RefColumnDesigns;
 }
-public enum GenNavigateType
+enum GenNavigateType
 {
     OneToOne, ManyToOne, OneToMany, ManyToMany
 }

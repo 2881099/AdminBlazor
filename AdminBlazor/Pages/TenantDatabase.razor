@@ -1,0 +1,74 @@
+@page "/Admin/TenantDatabase"
+@using BootstrapBlazor.Components
+@using FreeSql
+
+<PageTitle>数据库</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <AdminTable2 TItem="TenantDatabaseEntity" Context="item" PageSize="20" Title="数据库"
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+                <TableHeader>
+                    <th>显示名</th>
+                    <th>数据库</th>
+                    <th>连接串</th>
+                    <th>创建时间</th>
+                    <th>修改时间</th>
+                </TableHeader>
+                <TableRow>
+                    <td>@item.Label</td>
+                    <td>@item.DataType</td>
+                    <td>@item.ConenctionString</td>
+                    <td>@item?.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@item?.ModifiedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </TableRow>
+                <EditTemplate>
+                    <div class="row">
+                        <div class="form-group col-12">
+                            <label class="form-label">显示名</label>
+                            <input @bind="item.Label" type="text" class="form-control" placeholder="" maxlength="50">
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">数据库</label>
+                            <SelectEnum TEnum="DataType" @bind-Value="item.DataType" />
+                        </div>
+                        <div class="form-group col-12">
+                            <label class="form-label">连接串</label>
+                            <textarea @bind="item.ConenctionString" class="form-control" placeholder="" maxlength="500" rows="5"></textarea>
+                            ConenctionString.Replace("{database}", 租户名称)
+                        </div>
+                    </div>
+                </EditTemplate> 
+            </AdminTable2>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Inject] IAggregateRootRepository<TenantDatabaseEntity> repo { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("数据库", "DataType", "MySql,SqlServer,PostgreSQL,Oracle,Sqlite,达梦,人大金仓,南大通用,虚谷,神通,QuestDb,Firebird,ClickHouse", "0,1,2,3,4,12,15,19,21,14,20,16,18"),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<TenantDatabaseEntity> e)
+    {
+        e.Select.WhereIf(e.Filters[0].HasValue, a => a.DataType == e.Filters[0].Value<DataType>())
+            .WhereIf(!e.SearchText.IsNull(), a => a.Label.Contains(e.SearchText));
+    }
+
+    TenantDatabaseEntity editItem;
+    async Task OnEdit(TenantDatabaseEntity item)
+    {
+        editItem = item;
+        await Task.Yield();
+    }
+}

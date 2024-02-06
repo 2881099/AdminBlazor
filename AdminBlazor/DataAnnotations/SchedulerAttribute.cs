@@ -7,7 +7,7 @@ public class SchedulerAttribute : Attribute
 	public string Name { get; set; }
 	public TaskInterval Interval { get; set; }
 	public string Argument { get; set; }
-	public int Round { get; set; }
+	public int Round { get; set; } = -1;
     public FreeScheduler.TaskStatus Status { get; set; }
 
 	public SchedulerAttribute(string name)

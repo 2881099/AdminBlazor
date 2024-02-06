@@ -14,7 +14,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageTags>Blazor;Admin;RABC;Generator</PackageTags>
-		<Version>1.1.8</Version>
+		<Version>1.1.9</Version>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
 	</PropertyGroup>
 

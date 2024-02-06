@@ -99,7 +99,6 @@
 
 @code {
     [CascadingParameter, Inject] AdminContext admin { get; set; }
-    [Inject] IHttpContextAccessor httpContextAccessor { get; set; }
 
     async Task LogoutClick()
     {

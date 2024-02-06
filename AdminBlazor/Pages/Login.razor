@@ -44,9 +44,7 @@
     [CascadingParameter, Inject] AdminContext admin { get; set; }
     [Inject] IFreeSql fsql { get; set; }
     [Inject] Scheduler scheduler { get; set; }
-    [Inject] IHttpContextAccessor httpContextAccessor { get; set; }
     [Inject] WebClientService webClientService { get; set; }
-    [Inject] IIPLocatorProvider ipLocatorProvider { get; set; }
     string username, password;
     bool remember = true;
 

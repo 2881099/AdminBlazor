@@ -342,11 +342,12 @@ partial class AdminTable2<TItem>
                     var selectedCount = 0;
                     if (rootMenu.Level == 1)
                     {
+                        var olda = a;
                         a++;
                         for (; a < items.Count && items[a].Level > rootMenu.Level; a++)
                             if (items[a].Selected) selectedCount++;
                         a--;
-                        rootMenu.Selected = selectedCount > 0;
+                        if (a > olda) rootMenu.Selected = selectedCount > 0;
                     }
                 }
             }

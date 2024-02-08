@@ -13,6 +13,10 @@ namespace BootstrapBlazor.Components
         public List<MenuEntity> Childs { get; set; }
 
         /// <summary>
+        /// 是否系统
+        /// </summary>
+        public bool IsSystem { get; set; }
+        /// <summary>
         /// 父级菜单
         /// </summary>
         public long ParentId { get; set; }

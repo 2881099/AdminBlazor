@@ -9,7 +9,7 @@
 
             <AdminTable2 TItem="RoleEntity" Context="item" PageSize="20" TableTd99Width="330"
                 
-                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnRemove="OnRemove">
 
                 <TableHeader>
                     <th>名称</th>
@@ -67,6 +67,14 @@
     {
         e.Select.WhereIf(!e.SearchText.IsNull(), a => a.Name.Contains(e.SearchText) ||
                 a.Description.Contains(e.SearchText));
+    }
+    async Task OnRemove(AdminRemoveEventArgs<RoleEntity> e)
+    {
+        if (e.Items.Any(a => a.IsAdministrator))
+        {
+            await JS.Error("不能删除系统角色!");
+            e.Cancel = true;
+        }
     }
 
     async Task OnEdit(RoleEntity item)

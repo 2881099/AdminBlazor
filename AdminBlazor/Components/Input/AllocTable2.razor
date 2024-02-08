@@ -10,7 +10,7 @@
         if (TableTd1 != null && TableRow != null)
         {
             <AdminTable2 TItem="TChild" PageSize="PageSize" Context="item2"
-                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false"
+                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false" IsAutoSelectParent="true"
                 OnSelectChanged="AllocChanged" OnQuery="OnQuery">
                 <TableTh1>@TableTh1</TableTh1>
                 <TableTd1>@TableTd1(item2)</TableTd1>
@@ -22,7 +22,7 @@
         {
             @* 只有 Td1 时生成一行四列的 Table *@
             <AdminTable2 TItem="TChild" PageSize="PageSize" Context="item2"
-                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false"
+                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false" IsAutoSelectParent="true"
                 OnSelectChanged="AllocChanged" OnQuery="OnQuery">
                 <TableTh1>@TableTh1</TableTh1>
                 <TableTd1>@TableTd1(item2)</TableTd1>
@@ -31,7 +31,7 @@
         else if (TableRow != null)
         {
             <AdminTable2 TItem="TChild" PageSize="PageSize" Context="item2"
-                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false"
+                IsAdd="false" IsEdit="false" IsRemove="false" IsSearchText="IsSearchText" IsQueryString="false" IsAutoSelectParent="true"
                 OnSelectChanged="AllocChanged" OnQuery="OnQuery">
                 <TableHeader>@TableHeader</TableHeader>
                 <TableRow>@TableRow?.Invoke(item2)</TableRow>

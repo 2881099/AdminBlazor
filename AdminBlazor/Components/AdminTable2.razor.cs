@@ -61,6 +61,10 @@ partial class AdminTable2<TItem>
     /// </summary>
     [Parameter] public bool IsMultiSelect { get; set; } = true;
     /// <summary>
+    /// 自动选中父
+    /// </summary>
+    [Parameter] public bool IsAutoSelectParent { get; set; } = false;
+    /// <summary>
     /// 开启编辑保存时，弹框确认
     /// </summary>
     [Parameter] public bool IsConfirmEdit { get; set; } = true;
@@ -125,7 +129,7 @@ partial class AdminTable2<TItem>
     /// <summary>
     /// 正在删除
     /// </summary>
-    [Parameter] public EventCallback<List<TItem>> OnRemove { get; set; }
+    [Parameter] public EventCallback<AdminRemoveEventArgs<TItem>> OnRemove { get; set; }
     /// <summary>
     /// 选择内容发生变化
     /// </summary>
@@ -214,7 +218,12 @@ partial class AdminTable2<TItem>
         var list = item != null ? new List<TItem> { item } : items.Where(a => a.Selected).Select(a => a.Value).ToList();
         if (list.Any() == false) return;
         if (IsConfirmRemove && await JS.Confirm($"确定要删除 {list.Count}行 记录吗？", "删除之后无法恢复！") == false) return;
-        if (OnRemove.HasDelegate) await OnRemove.InvokeAsync(list);
+        if (OnRemove.HasDelegate)
+        {
+            var args = new AdminRemoveEventArgs<TItem> { Items = list };
+            await OnRemove.InvokeAsync(args);
+            if (args.Cancel) return;
+        }
         q.Total -= await repository.DeleteAsync(list);
         await Load();
     }
@@ -308,9 +317,9 @@ partial class AdminTable2<TItem>
             for (var a = 0; a < items.Count; a++)
                 items[a].Selected = selected;
         }
-        else //single
+        else
         {
-            if (IsSingleSelect)
+            if (IsSingleSelect) //single
             {
                 var optPkValue = GetItemPrimaryValue(opt.Value);
                 TItem tmp = null;
@@ -333,21 +342,31 @@ partial class AdminTable2<TItem>
                             if (items[b].Level > opt.Level) items[b].Selected = opt.Selected;
                             else break;
                         }
+                        if (IsAutoSelectParent)
+                        {
+                            var parents = new List<int>();
+                            for (var b = a - 1; b >= 0; b--)
+                            {
+                                if (items[b].Level >= opt.Level || parents.Any(c => items[c].Level == items[b].Level)) continue;
+                                parents.Add(b);
+                                if (items[b].Level == 1) break;
+                            }
+                            var selectedCount = 0;
+                            foreach (var parentIndex in parents)
+                            {
+                                if (opt.Selected || selectedCount > 0)
+                                {
+                                    items[parentIndex].Selected = true;
+                                    continue;
+                                }
+                                var rootMenu = items[parentIndex];
+                                var b = parentIndex + 1;
+                                for (; b < items.Count && items[b].Level > rootMenu.Level; b++)
+                                    if (items[b].Selected) selectedCount++;
+                                if (b > parentIndex + 1) rootMenu.Selected = selectedCount > 0;
+                            }
+                        }
                         break;
-                    }
-                }
-                for (var a = 0; a < items.Count; a++)
-                {
-                    var rootMenu = items[a];
-                    var selectedCount = 0;
-                    if (rootMenu.Level == 1)
-                    {
-                        var olda = a;
-                        a++;
-                        for (; a < items.Count && items[a].Level > rootMenu.Level; a++)
-                            if (items[a].Selected) selectedCount++;
-                        a--;
-                        if (a > olda) rootMenu.Selected = selectedCount > 0;
                     }
                 }
             }

@@ -98,7 +98,7 @@
 </div>
 
 @code {
-    [CascadingParameter, Inject] AdminContext admin { get; set; }
+    [Inject] AdminContext admin { get; set; }
 
     async Task LogoutClick()
     {

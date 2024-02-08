@@ -163,9 +163,14 @@
             }
         }
     }
-    async Task OnRemove(List<MenuEntity> list)
+    async Task OnRemove(AdminRemoveEventArgs<MenuEntity> e)
     {
-        await list.IncludeManyAsync(repo.Orm, a => a.Childs);
+        if (e.Items.Any(a => a.IsSystem))
+        {
+            await JS.Error("不能删除系统菜单!");
+            e.Cancel = true;
+        }
+        await e.Items.IncludeManyAsync(repo.Orm, a => a.Childs);
     }
 
     MenuEntity menuDesign;

@@ -75,4 +75,9 @@ namespace BootstrapBlazor.Components
         }
     }
 
+    public class AdminRemoveEventArgs<TItem>
+    {
+        public List<TItem> Items { get; set; }
+        public bool Cancel { get; set; }
+    }
 }

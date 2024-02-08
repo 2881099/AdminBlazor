@@ -8,7 +8,7 @@
 
             <AdminTable2 TItem="UserEntity" Context="item" PageSize="20" TableTd99Width="230"
                 
-                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnRemove="OnRemove">
 
                 <CardHeader>
                     <button @onclick="ShowUserLogin" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-camera"></i> 登陆日志</button>
@@ -89,6 +89,7 @@
 @code {
 
     [Inject] IAggregateRootRepository<UserEntity> repo { get; set; }
+    [Inject] AdminContext admin { get; set; }
 
     async Task InitQuery(AdminQueryInfo e)
     {
@@ -106,6 +107,14 @@
         e.Select.IncludeMany(a => a.Roles)
             .WhereIf(e.Filters[0].HasValue, a => a.Roles.Any(b => e.Filters[0].Values<long>().Contains(b.Id)))
             .WhereIf(!e.SearchText.IsNull(), a => a.Username.Contains(e.SearchText) || a.Nickname.Contains(e.SearchText));
+    }
+    async Task OnRemove(AdminRemoveEventArgs<UserEntity> e)
+    {
+        if (e.Items.Any(a => a.Id == admin.User.Id))
+        {
+            await JS.Error("不能删除当前登陆的账号!");
+            e.Cancel = true;
+        }
     }
 
     async Task OnEdit(UserEntity item)

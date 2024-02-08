@@ -9,7 +9,7 @@
         <div class="col-12">
 
             <AdminTable2 TItem="TenantEntity" Context="item" PageSize="20" Title="租户" DialogClassName="modal-lg" TableTd99Width="250"
-                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnEditFinish="OnEditFinish">
+                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnEditFinish="OnEditFinish" OnRemove="OnRemove">
 
                 <TableHeader>
                     <th>名称</th>
@@ -110,6 +110,14 @@
                 a.Host.Contains(e.SearchText) || 
                 a.Title.Contains(e.SearchText) || 
                 a.Description.Contains(e.SearchText));
+    }
+    async Task OnRemove(AdminRemoveEventArgs<TenantEntity> e)
+    {
+        if (e.Items.Any(a => a.Id == "main"))
+        {
+            await JS.Error("不能删除 main 租户记录!");
+            e.Cancel = true;
+        }
     }
     async Task OnEditMenuOnQuery(AdminQueryEventArgs<MenuEntity> e)
     {

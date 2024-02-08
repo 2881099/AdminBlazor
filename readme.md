@@ -39,7 +39,7 @@ AdminBlazor 是一款 Blazor Server SaaS 后台管理项目，支持 RABC 权限
 - UserEntity 多对多 RoleEntity
 - RoleEntity 多对多 MenuEntity
 
-提示：AdminContext 类型已设置成 \[CascadeParameter\]
+提示：AdminContext 类型已注入为 Scoped
 
 ```csharp
 class AdminContext
@@ -70,7 +70,7 @@ void ButtonClick()
 
 ## 租户
 
-提示：AdminContext 类型已设置成 \[CascadeParameter\]
+提示：AdminContext 类型已注入为 Scoped
 
 ```csharp
 class AdminContext

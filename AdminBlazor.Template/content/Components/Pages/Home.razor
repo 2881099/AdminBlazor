@@ -2,7 +2,32 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<CherryMarkdown @bind-Value="MarkdownString" IsViewer="true" />
 
-Welcome to your new app.
+@code {
+    string MarkdownString = @"AdminBlazor 是一款 Blazor Server SaaS 后台管理项目，支持 RABC 权限菜单/按钮，支持一对一、一对多、多对多代码生成 .razor 界面。
 
+集成功能：菜单、角色、用户、定时任务、数据字典、租户
+
+依赖组件：BootstrapBlazor、FreeSql、FreeScheduler、Rougamo
+
+- github: [https://github.com/2881099/AdminBlazor](https://github.com/2881099/AdminBlazor)
+- gitee: [https://gitee.com/FreeSql/AdminBlazor](https://gitee.com/FreeSql/AdminBlazor)
+
+### 快速开始
+
+1. 安装模板
+
+> dotnet new install AdminBlazor.Template
+
+2. 新建项目
+
+> dotnet new admin
+
+3. 运行访问
+
+> http://localhost:5231/Admin
+
+用户名：admin 密码：freesql
+";
+}

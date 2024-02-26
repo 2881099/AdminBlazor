@@ -41,7 +41,7 @@
 </div>
 
 @code {
-    [CascadingParameter, Inject] AdminContext admin { get; set; }
+    [Inject] AdminContext admin { get; set; }
     [Inject] IFreeSql fsql { get; set; }
     [Inject] Scheduler scheduler { get; set; }
     [Inject] WebClientService webClientService { get; set; }

@@ -9,7 +9,7 @@
 	</PropertyGroup>
 	
 	<ItemGroup>
-		<PackageReference Include="AdminBlazor" Version="1.1.10" />
+		<PackageReference Include="AdminBlazor" Version="1.1.11" />
 		<PackageReference Include="BootstrapBlazor.CherryMarkdown" Version="8.0.0" />
 		<PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.812" />
 		<PackageReference Include="Rougamo.Fody" Version="2.2.0" />

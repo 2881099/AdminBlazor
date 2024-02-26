@@ -107,6 +107,7 @@
         var ids = e.Items.Select(a => a.Id).ToArray();
         await repo.Orm.Delete<DictEntity>().Where(a => ids.Contains(a.ParentId)).ExecuteAffrowsAsync();
         clickOpt = new(await repo.Orm.Select<DictEntity>().Where(a => a.ParentId == 0 && !ids.Contains(a.Id)).FirstAsync());
+        query2.IsTracking = clickOpt?.Value != null;
         await query2.InvokeQueryAsync();
     }
     AdminItem<DictEntity> clickOpt;
@@ -117,6 +118,7 @@
             if (clickOpt != null) clickOpt.RowClass = "";
             opt.RowClass = "active";
             clickOpt = opt;
+            query2.IsTracking = clickOpt?.Value != null;
             if (query2?.InvokeQueryAsync != null) await query2.InvokeQueryAsync();
         }
         await Task.Yield();

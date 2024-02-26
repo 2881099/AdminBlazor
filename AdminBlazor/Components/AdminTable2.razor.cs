@@ -185,6 +185,7 @@ partial class AdminTable2<TItem>
                 }
             }
         }
+        q.IsTracking = IsEdit;
         q.InvokeQueryAsync = this.Load;
         await q.InvokeQueryAsync();
     }
@@ -193,7 +194,7 @@ partial class AdminTable2<TItem>
     {
         var select = repository.Select;
         if (OnQuery.HasDelegate) await OnQuery.InvokeAsync(new AdminQueryEventArgs<TItem>(select, q.SearchText, q.Filters));
-        if (!IsEdit) select.NoTracking(); //多层弹框可能造成 OnEdit 级联加载内容失效
+        if (!q.IsTracking) select.NoTracking(); //多层弹框可能造成 OnEdit 级联加载内容失效
         if (q.PageSize > 0)
         {
             q.Total = await select.CountAsync();

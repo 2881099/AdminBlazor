@@ -48,6 +48,7 @@ namespace BootstrapBlazor.Components
         public string PageNumberQueryStringName { get; set; } = "page";
         public string SearchTextQueryStringName { get; set; } = "search";
         public bool IsQueryString { get; set; } = true;
+        public bool IsTracking { get; set; } = true;
         public Func<Task> InvokeQueryAsync { get; set; }
     }
     public class AdminFilterInfo

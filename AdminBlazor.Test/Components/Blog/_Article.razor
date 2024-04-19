@@ -11,7 +11,7 @@
         <div class="col-12">
 
             <AdminTable2 TItem="Article" Context="item" PageSize="20" Title="随笔文章"DialogClassName="modal-xxl"
-                OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+                         OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnSave="OnSave">
 
                 <TableHeader>
                     <th>随笔专栏</th>
@@ -220,5 +220,29 @@
             repo.Attach(item);
         }
         await Task.Yield();
+    }
+
+    async Task<bool> OnSave(Article item)
+    {
+        //检查必须录入
+        if (string.IsNullOrWhiteSpace(item.Content))
+        {
+            await  JS.Error("提示", "正文必须录入");
+
+            return false;
+        }
+
+        if (item.Id == default)
+        {
+            await repo.InsertAsync(item);
+           
+        }
+        else
+        {
+            if (await JS.Confirm($"确定要修改数据吗？") == false) return false;
+            await repo.UpdateAsync(item);
+        }
+
+        return true;
     }
 }

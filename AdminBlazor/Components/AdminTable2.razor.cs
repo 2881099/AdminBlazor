@@ -122,6 +122,12 @@ partial class AdminTable2<TItem>
     /// 正在编辑，设置编辑对象
     /// </summary>
     [Parameter] public EventCallback<TItem> OnEdit { get; set; }
+
+    /// <summary>
+    /// 保存
+    /// </summary>
+    [Parameter] public Func<TItem, Task<bool>>? OnSave { get; set; }
+
     /// <summary>
     /// 编辑完成
     /// </summary>
@@ -282,18 +288,26 @@ partial class AdminTable2<TItem>
     }
     async Task Save()
     {
-        if (itemIsEdit)
-        {
-            if (IsConfirmEdit && await JS.Confirm($"确定要修改数据吗？") == false) return;
-            await repository.UpdateAsync(item);
-        }
+        bool flag = true;
+        if (OnSave != null) { flag = await OnSave(item); }
         else
         {
-            await repository.InsertAsync(item);
+            if (itemIsEdit)
+            {
+                if (IsConfirmEdit && await JS.Confirm($"确定要修改数据吗？") == false) return;
+                await repository.UpdateAsync(item);
+            }
+            else
+            {
+                await repository.InsertAsync(item);
+            }
         }
-        if (OnEditFinish.HasDelegate) await OnEditFinish.InvokeAsync(item);
-        item = null;
-        await Load();
+        if (flag)
+        {
+            if (OnEditFinish.HasDelegate) await OnEditFinish.InvokeAsync(item);
+            item = null;
+            await Load();
+        }
     }
 
     async Task RowClick(AdminItem<TItem> opt)

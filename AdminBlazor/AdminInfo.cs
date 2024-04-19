@@ -81,4 +81,9 @@ namespace BootstrapBlazor.Components
         public List<TItem> Items { get; set; }
         public bool Cancel { get; set; }
     }
+    public class AdminConfirmEventArgs<T>
+    {
+        public T Argument { get; set; }
+        public bool Cancel { get; set; }
+    }
 }

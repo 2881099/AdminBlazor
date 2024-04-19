@@ -124,9 +124,9 @@ partial class AdminTable2<TItem>
     [Parameter] public EventCallback<TItem> OnEdit { get; set; }
 
     /// <summary>
-    /// 保存
+    /// 保存验证
     /// </summary>
-    [Parameter] public Func<TItem, Task<bool>>? OnSave { get; set; }
+    [Parameter] public EventCallback<AdminConfirmEventArgs<TItem>> OnSaving { get; set; }
 
     /// <summary>
     /// 编辑完成
@@ -288,26 +288,24 @@ partial class AdminTable2<TItem>
     }
     async Task Save()
     {
-        bool flag = true;
-        if (OnSave != null) { flag = await OnSave(item); }
+        if (OnSaving.HasDelegate)
+        {
+            var args = new AdminConfirmEventArgs<TItem> { Argument = item };
+            await OnSaving.InvokeAsync(args);
+            if (args.Cancel) return;
+        }
+        if (itemIsEdit)
+        {
+            if (IsConfirmEdit && await JS.Confirm($"确定要修改数据吗？") == false) return;
+            await repository.UpdateAsync(item);
+        }
         else
         {
-            if (itemIsEdit)
-            {
-                if (IsConfirmEdit && await JS.Confirm($"确定要修改数据吗？") == false) return;
-                await repository.UpdateAsync(item);
-            }
-            else
-            {
-                await repository.InsertAsync(item);
-            }
+            await repository.InsertAsync(item);
         }
-        if (flag)
-        {
-            if (OnEditFinish.HasDelegate) await OnEditFinish.InvokeAsync(item);
-            item = null;
-            await Load();
-        }
+        if (OnEditFinish.HasDelegate) await OnEditFinish.InvokeAsync(item);
+        item = null;
+        await Load();
     }
 
     async Task RowClick(AdminItem<TItem> opt)

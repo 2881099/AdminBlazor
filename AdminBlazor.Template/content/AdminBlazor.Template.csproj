@@ -9,9 +9,9 @@
 	</PropertyGroup>
 	
 	<ItemGroup>
-		<PackageReference Include="AdminBlazor" Version="1.1.13" />
+		<PackageReference Include="AdminBlazor" Version="1.1.14" />
 		<PackageReference Include="BootstrapBlazor.CherryMarkdown" Version="8.0.0" />
-		<PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.820" />
+		<PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.822" />
 		<PackageReference Include="Rougamo.Fody" Version="2.2.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.1" />
 	</ItemGroup>

@@ -161,16 +161,15 @@ public static class AdminExtensions
         services.AddScoped(typeof(IAggregateRootRepository<>), typeof(DddRepository<>));
 
         #region Scheduler, SchedulerAttribute
-        Dictionary<string, Action<IServiceProvider>> schedulerAttributeTriggers = new();
+        Dictionary<string, Action<IServiceProvider, TaskInfo>> schedulerAttributeTriggers = new();
         Func<IServiceProvider, Scheduler> schedulerFactory = r =>
         {
             return new FreeSchedulerBuilder()
                 .OnExecuting(task =>
                 {
-                    System.Console.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss.fff")}] {task.Topic} 被执行");
                     if (schedulerAttributeTriggers.TryGetValue(task.Topic, out var trigger))
                     {
-                        trigger(r);
+                        trigger(r, task);
                         return;
                     }
                     options.SchedulerExecuting?.Invoke(r, task);
@@ -193,11 +192,12 @@ public static class AdminExtensions
                 var schedulerMethods = assembly.GetTypes().SelectMany(a => a.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Select(b =>
                 {
                     var attr = b.GetCustomAttribute<SchedulerAttribute>();
-                    if (attr == null || attr.Name.IsNull() || attr.Argument.IsNull()) return null;
+                    if (attr == null || attr.Name.IsNull()) return null;
                     return new
                     {
                         Class = a,
                         Method = b,
+                        IsLazyTask = attr.Argument.IsNull(),
                         TaskInfo = new TaskInfo
                         {
                             Topic = $"[SchedulerAttribute]{attr.Name}",
@@ -216,30 +216,39 @@ public static class AdminExtensions
                 if (schedulerMethods.Any())
                 {
                     var list = fsql.Select<TaskInfo>().Where(a => a.Topic.StartsWith("[SchedulerAttribute]")).ToList();
-                    foreach (var method in schedulerMethods)
+                    var schedulerTasks = schedulerMethods.Where(a => a.IsLazyTask == false).Select(a => a.TaskInfo).ToList();
+                    foreach (var task in schedulerTasks)
                     {
-                        var find = list.Find(a => a.Topic == method.TaskInfo.Topic);
+                        var find = list.Find(a => a.Topic == task.Topic);
                         if (find != null)
                         {
-                            method.TaskInfo.Id = find.Id;
-                            method.TaskInfo.Body = find.Body;
-                            method.TaskInfo.CreateTime = find.CreateTime;
-                            method.TaskInfo.CurrentRound = find.CurrentRound;
-                            method.TaskInfo.ErrorTimes = find.ErrorTimes;
-                            method.TaskInfo.LastRunTime = find.LastRunTime;
+                            task.Id = find.Id;
+                            task.Body = find.Body;
+                            task.CreateTime = find.CreateTime;
+                            task.CurrentRound = find.CurrentRound;
+                            task.ErrorTimes = find.ErrorTimes;
+                            task.LastRunTime = find.LastRunTime;
                         }
                         else
                         {
-                            method.TaskInfo.Id = $"{DateTime.Now.ToString("yyyyMMdd")}.{YitIdHelper.NextId()}";
+                            task.Id = $"{DateTime.Now.ToString("yyyyMMdd")}.{YitIdHelper.NextId()}";
                         }
                     }
                     var repo = fsql.GetRepository<TaskInfo>();
                     repo.BeginEdit(list);
-                    repo.EndEdit(schedulerMethods.Select(a => a.TaskInfo).ToList());
-                    foreach (var method in schedulerMethods)
-                        schedulerAttributeTriggers[method.TaskInfo.Topic] = method.Method.GetParameters().Length == 0 ?
-                            r => method.Method.Invoke(null, new object[0]) :
-                            r => method.Method.Invoke(null, new object[] { r });
+                    repo.EndEdit(schedulerTasks);
+                    foreach (var schedulerMethod in schedulerMethods)
+                    {
+                        var method = schedulerMethod.Method;
+                        var triggerName = schedulerMethod.TaskInfo.Topic;
+                        if (schedulerMethod.IsLazyTask) triggerName = triggerName.Replace("[SchedulerAttribute]", "");
+                        schedulerAttributeTriggers[triggerName] = (r, task) =>
+                        {
+                            method.Invoke(null, method.GetParameters().Select(a =>
+                                a.ParameterType == typeof(IServiceProvider) || a.ParameterType == typeof(ServiceProvider) ? (object)r :
+                                a.ParameterType == typeof(TaskInfo) ? task : null).ToArray());
+                        };
+                    }
                 }
             }
         }

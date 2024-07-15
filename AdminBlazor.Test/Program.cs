@@ -145,6 +145,8 @@ if (!fsql.Select<Classify>().Any() &&
 }
 #endregion
 
+//app.Services.GetService<Scheduler>().AddTask("任务3", "111222", -1, 5);
+
 app.Run();
 
 //自定义触发
@@ -165,8 +167,15 @@ static void Scheduler001()
 {
     System.Console.WriteLine("任务1 被触发...");
 }
-[Scheduler("任务2", "0/15 * * * * *")]
-static void Scheduler002(IServiceProvider service)
+[Scheduler("任务2", Interval = TaskInterval.SEC, Argument = "10")]
+static void Scheduler002(IServiceProvider service, TaskInfo task)
 {
     System.Console.WriteLine("任务2 被触发...");
+}
+
+//运行时 scheduler.AddTask("任务3"...)
+[Scheduler("任务3")]
+static void Scheduler003(TaskInfo task)
+{
+    System.Console.WriteLine($"任务3 被触发...{task.Body}");
 }

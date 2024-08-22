@@ -245,9 +245,11 @@ public static class AdminExtensions
                         if (schedulerMethod.IsLazyTask) triggerName = triggerName.Replace("[SchedulerAttribute]", "");
                         schedulerAttributeTriggers[triggerName] = (r, task) =>
                         {
-                            method.Invoke(null, method.GetParameters().Select(a =>
+                            var ret = method.Invoke(null, method.GetParameters().Select(a =>
                                 a.ParameterType == typeof(IServiceProvider) || a.ParameterType == typeof(ServiceProvider) ? (object)r :
                                 a.ParameterType == typeof(TaskInfo) ? task : null).ToArray());
+                            if (ret != null && typeof(Task).IsAssignableFrom(method.ReturnType))
+                                ((Task)ret)?.Wait();
                         };
                     }
                 }

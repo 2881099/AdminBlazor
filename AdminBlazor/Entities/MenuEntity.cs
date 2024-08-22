@@ -50,6 +50,5 @@ namespace BootstrapBlazor.Components
         /// </summary>
         public MenuEntityType Type { get; set; }
     }
+    public enum MenuEntityType { 菜单, 按钮, 外部连接, 增删改查 }
 }
-
-public enum MenuEntityType { 菜单, 按钮, 外部连接, 增删改查 }

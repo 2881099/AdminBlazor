@@ -168,7 +168,7 @@ static void Scheduler001()
     System.Console.WriteLine("任务1 被触发...");
 }
 [Scheduler("任务2", Interval = TaskInterval.SEC, Argument = "10")]
-static void Scheduler002(IServiceProvider service, TaskInfo task)
+async static void Scheduler002(IServiceProvider service, TaskInfo task)
 {
     System.Console.WriteLine("任务2 被触发...");
 }

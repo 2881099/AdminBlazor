@@ -112,10 +112,11 @@ public static class AdminExtensions
                 },
             });
         }
-        if (fsql.Select<TenantDatabaseEntity>().Any() == false)
-            fsql.Insert(new TenantDatabaseEntity { Label = "体验数据库", DataType = DataType.Sqlite, ConenctionString = "data source={database}.db" }).ExecuteAffrows();
+        var defaultDatabase = fsql.Select<TenantDatabaseEntity>().First();
+        if (defaultDatabase == null)
+            fsql.Insert(defaultDatabase = new TenantDatabaseEntity { Label = "体验数据库", DataType = DataType.Sqlite, ConenctionString = "data source={database}.db" }).ExecuteAffrows();
         if (fsql.Select<TenantEntity>().Any(a => a.Id == "main") == false)
-            fsql.Insert(new TenantEntity { Id = "main", Host = "localhost", Title = "AdminBlazor SaaS", Description = "AdminBlazor SaaS 系统主库(租户管理)", IsEnabled = true, DatabaseId = 0 }).ExecuteAffrows();
+            fsql.Insert(new TenantEntity { Id = "main", Host = "localhost", Title = "AdminBlazor SaaS", Description = "AdminBlazor SaaS 系统主库(租户管理)", IsEnabled = true, DatabaseId = defaultDatabase.Id }).ExecuteAffrows();
         
         if (fsql.Select<RoleEntity>().Where(a => a.IsAdministrator).Any() == false)
             fsql.Insert(new RoleEntity { Name = "Administrator", Description = "管理员角色", IsAdministrator = true }).ExecuteAffrows();
@@ -244,9 +245,11 @@ public static class AdminExtensions
                         if (schedulerMethod.IsLazyTask) triggerName = triggerName.Replace("[SchedulerAttribute]", "");
                         schedulerAttributeTriggers[triggerName] = (r, task) =>
                         {
-                            method.Invoke(null, method.GetParameters().Select(a =>
+                            var ret = method.Invoke(null, method.GetParameters().Select(a =>
                                 a.ParameterType == typeof(IServiceProvider) || a.ParameterType == typeof(ServiceProvider) ? (object)r :
                                 a.ParameterType == typeof(TaskInfo) ? task : null).ToArray());
+                            if (ret != null && typeof(Task).IsAssignableFrom(method.ReturnType))
+                                ((Task)ret)?.Wait();
                         };
                     }
                 }

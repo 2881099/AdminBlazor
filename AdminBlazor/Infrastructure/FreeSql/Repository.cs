@@ -2,12 +2,12 @@
 
 class BasicRepository<TEntity, TKey> : BaseRepository<TEntity, TKey> where TEntity : class
 {
-    public BasicRepository(IFreeSql fsql) : base(fsql, null, null) { }
-    public BasicRepository(IFreeSql fsql, UnitOfWorkManager uowManager) : base(uowManager?.Orm ?? fsql, null, null)
+    public BasicRepository(IFreeSql fsql) : base(fsql) { }
+    public BasicRepository(IFreeSql fsql, UnitOfWorkManager uowManager) : base(uowManager?.Orm ?? fsql)
     {
         uowManager?.Binding(this);
     }
-    public BasicRepository(IFreeSql fsql, UnitOfWorkManager uowManager, RepositoryOptions options) : base(uowManager?.Orm ?? fsql, null, null)
+    public BasicRepository(IFreeSql fsql, UnitOfWorkManager uowManager, RepositoryOptions options) : base(uowManager?.Orm ?? fsql)
     {
         uowManager?.Binding(this);
         if (options != null)

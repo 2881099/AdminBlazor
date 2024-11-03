@@ -101,7 +101,11 @@ partial class InputTable2<TItem, TKey>
             {
                 var pkval = GetPrimaryValue(a.Value);
                 if (ItemChanged.HasDelegate)
+                {
+                    foreach (var olditem in allItems)
+                        if (olditem.Value.Selected) olditem.Value.Selected = false;
                     a.Selected = object.Equals(GetPrimaryValue(Item), pkval);
+                }
                 else if (ItemsChanged.HasDelegate)
                     a.Selected = allItems.TryGetValue(pkval, out var subi) && subi.Selected;
                 else if (ValueChanged.HasDelegate)

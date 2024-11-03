@@ -30,7 +30,7 @@
                     <div class="row form-inline form-inline-end">
                         <div class="form-group col-6">
                             <label class="form-label">关联随笔</label>
-                            <InputTable2 TItem="Article" TKey="long" @bind-Value="item.ArticleId" @bind-Item="item.Article" DisplayText="@(a => $"[{a.Id}]{a.Title}")" Context="item2">
+                            <InputTable2 TItem="Article" TKey="long" @bind-Value="item.ArticleId" @bind-Item="item.Article" DisplayText="@(a => $"[{a.Id}]{a.Title}")" Context="item2" PageSize="3">
                                 <TableTh1>标题</TableTh1>
                                 <TableTd1>@item2.Title</TableTd1>
                                 <TableHeader>

@@ -1,6 +1,7 @@
 ﻿@import "plugins/adminlte.min.css";
 @import "../BootstrapBlazor.FontAwesome/css/font-awesome.min.css";
 @import "../BootstrapBlazor/css/bootstrap.blazor.bundle.min.css";
+@import "../BootstrapBlazor/css/motronic.min.css";
 
 :root {
     --bb-border-focus-color: #86b7fe;
@@ -10,10 +11,63 @@
     --bb-shadow: 0 0 8px 0 rgba(232,237,250,.6),0 2px 4px 0 rgba(232,237,250,.5019607843);
     --bb-hover-shadow: 0 1px 7px 0 rgba(0,0,0,.0509803922),0 2px 8px 0 rgba(0,0,0,.0705882353),0 3px 9px 0 rgba(0,0,0,.0588235294),0 5px 10px 0 rgba(0,0,0,.031372549);
     --bb-font-size: 1rem;
+    --lte-sidebar-width:150px;
 }
+.app-main .app-content {
+    height:100%;
+    padding:0px;
+    font-size:12px;
+}
+.app-main .app-content .dockview-content {
+    border-top:none;
+}
+.app-main .app-content .dockview-content .content-container {
+    padding: 0;
+    margin: 0;
+}
+.app-main .app-content .dockview-content .container-fluid {
+    padding: 0px 0 0 0;
+    margin: 0;
+}
+.app-main .app-content .dockview-content .container-fluid .col-12 {
+    padding:0;
+    margin:0;
+}
+.app-main .app-content .dockview-content .card {
+    --bs-card-border-radius: 0;
+    padding-top:12px;
+    background-color:white;
+    border:none;
+}
+.app-main .app-content .dockview-content .card .card-header {
+    background-color:white;
+}
+.app-main .app-content .dockview-content .card .card-header:first-child .row {
+    padding-left:6px;
+}
+.app-main .app-content .dockview-content .card .card-footer {
+    border:none;
+}
+
 .dropdown-logout .logout-avatar {
     --bb-logout-avatar-width: 30px;
     --bb-logout-avatar-height: 30px;
+}
+.btn, .input-group input {
+    --bs-btn-line-height: 1;
+    border-radius: 3px;
+    padding: 0.325rem 0.35rem;
+    font-size: 12px;
+    line-height: 1.2;
+    border-radius: 0.15rem;
+    height: 24px;
+}
+.btn-xs {
+    padding: 0.125rem 0.25rem;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 0.15rem;
+    height: 18px;
 }
 .btn-light {
     --bs-btn-color: #444;
@@ -49,6 +103,15 @@ tr.active td {
     background-color: #17a2b8;
     color: white;
 }
+.sidebar-menu .nav-link {
+    position: relative;
+    transition: width ease-in-out .3s;
+    border-radius: 3px;
+}
+.sidebar-menu .nav-item > .nav-link {
+    padding:3px;
+    margin:6px 0px 0px 0px;
+}
 .sidebar-menu .nav-item > .nav-link .nav-arrow {
     transition: transform ease-in-out .3s;
     transform: translateY(-50%) rotate(180deg);
@@ -61,14 +124,15 @@ tr.active td {
 }
 .sidebar-wrapper {
     --lte-sidebar-submenu-active-bg: #17a2b8;
+    font-size:12px;
 }
 .sidebar-wrapper .sidebar-menu > .nav-item > .nav-treeview {
-    margin-left: 1rem;
+    /*margin-left: 1rem;*/
 }
 .sidebar-wrapper .sidebar-menu > .nav-item > .nav-treeview .nav-link {
-    padding: 6px;
+    padding: 3px;
     margin: 0px;
-    line-height: 22px;
+    /*line-height: 18px;*/
 }
 
 .m-0 {
@@ -429,12 +493,6 @@ tr.active td {
 
 .ml-auto, .mx-auto {
     margin-left: auto !important
-}
-.btn-xs {
-    padding: 0.125rem 0.25rem;
-    font-size: .75rem;
-    line-height: 1.5;
-    border-radius: 0.15rem;
 }
 
 .form-group {

@@ -31,7 +31,6 @@ var adminBlazorJS = {
         var ele = $('#' + id);
         ele.modal('show');
         ele.on('hidden.bs.modal', e => {
-            debugger
             if (id != e.target.id) return
             dotnetRef.invokeMethodAsync('ModalOnClose')
         })

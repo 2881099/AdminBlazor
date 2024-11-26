@@ -14,11 +14,11 @@
                     <AdminSearchFilter AdminQuery="q" />
                 </div>
                 <div class="card-header d-block">
-                    <button @onclick="BeginAdd" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-plus"></i> 添加</button>
-                    <button @onclick="e => Load()" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
+                    <button @onclick="BeginAdd" type="button" class="mr-2 btn btn-light"><i class="fas fa-plus"></i> 添加</button>
+                    <button @onclick="e => Load()" type="button" class="mr-2 btn btn-light"><i class="fas fa-sync-alt"></i> 刷新</button>
                     @if (LoadResult?.Clusters?.Any() == true)
                     {
-                        <button @onclick="LoadClusterLog" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-log"></i> 集群日志</button>
+                        <button @onclick="LoadClusterLog" type="button" class="mr-2 btn btn-light"><i class="fas fa-log"></i> 集群日志</button>
                     }
                     <div class="float-end">
                         <AdminSearchText AdminQuery="q" />
@@ -186,7 +186,7 @@
             <AdminSearchFilter AdminQuery="qLog" />
         </div>
         <div class="card-header d-block">
-            <button @onclick="e => LoadTaskLog()" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
+            <button @onclick="e => LoadTaskLog()" type="button" class="mr-2 btn btn-light"><i class="fas fa-sync-alt"></i> 刷新</button>
         </div>
         <div class="card-body p-0" style="border:none;">
             <div class="table-responsive">
@@ -240,7 +240,7 @@
                 <AdminSearchFilter AdminQuery="qCluster" />
             </div>
             <div class="card-header d-block">
-                <button @onclick="e => LoadClusterLog()" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
+                <button @onclick="e => LoadClusterLog()" type="button" class="mr-2 btn btn-light"><i class="fas fa-sync-alt"></i> 刷新</button>
             </div>
             <div class="card-body p-0" style="border:none;">
                 <div class="table-responsive">

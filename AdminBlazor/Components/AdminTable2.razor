@@ -22,31 +22,31 @@
             {
                 if (selectedCount > 0)
                 {
-                    <button @onclick="e => Delete()" type="button" class="mr-2 btn btn-light btn-sm"><i class="far fa-trash-alt"></i></button>
+                    <button @onclick="e => Delete()" type="button" class="mr-2 btn btn-light"><i class="far fa-trash-alt"></i></button>
                 }
                 else
                 {
-                    <button type="button" class="mr-2 btn btn-light btn-sm disabled"><i class="far fa-trash-alt"></i></button>
+                    <button type="button" class="mr-2 btn btn-light disabled"><i class="far fa-trash-alt"></i></button>
                 }
             }
             @if (IsEdit && IsSingleSelect)
             {
                 if (selectedCount > 0)
                 {
-                    <button @onclick="e => BeginEdit(items.FirstOrDefault(a => a.Selected)?.Value)" type="button" class="mr-2 btn btn-light btn-sm"><i class="far fa-edit"></i></button>
+                    <button @onclick="e => BeginEdit(items.FirstOrDefault(a => a.Selected)?.Value)" type="button" class="mr-2 btn btn-light"><i class="far fa-edit"></i></button>
                 }
                 else
                 {
-                    <button type="button" class="mr-2 btn btn-light btn-sm disabled"><i class="far fa-edit"></i></button>
+                    <button type="button" class="mr-2 btn btn-light disabled"><i class="far fa-edit"></i></button>
                 }
             }
             @if (IsAdd)
             {
-                <button @onclick="BeginAdd" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-plus"></i> 添加</button>
+                <button @onclick="BeginAdd" type="button" class="mr-2 btn btn-light"><i class="fas fa-plus"></i> 添加</button>
             }
             @if (IsRefersh)
             {
-                <button @onclick="e => Refersh()" type="button" class="mr-2 btn btn-light btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
+                <button @onclick="e => Refersh()" type="button" class="mr-2 btn btn-light"><i class="fas fa-sync-alt"></i> 刷新</button>
             }
 
             @CardHeader

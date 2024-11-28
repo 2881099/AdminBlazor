@@ -4,12 +4,15 @@ using FreeSql;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.JSInterop;
+using Newtonsoft.Json;
 using System.Reflection;
 using Yitter.IdGenerator;
 
 public class AdminContext
 {
+    public static AdminBlazorOptions AdminBlazorOptions => AdminExtensions.Options;
     public IServiceProvider Service { get; private set; }
     public HttpContext HttpContext { get; }
     NavigationManager Nav;
@@ -53,7 +56,7 @@ public class AdminContext
                 //被其他端登陆挤出
                 User = null;
                 await SignOut();
-                Redirect($"/Login?Redirect={new Uri(Nav.Uri).PathAndQuery.UrlEncode()}");
+                Redirect($"/Admin/Login?Redirect={new Uri(Nav.Uri).PathAndQuery.UrlEncode()}");
                 return;
             }
         }
@@ -213,6 +216,51 @@ public class AdminContext
         }
     }
 
+    #region 多页标签
+    public List<OpenedTabInfo> OpenedTabs { get; set; } = new(50);
+    public class OpenedTabInfo
+    {
+        public string Key { get; set; }
+        public string Title { get; set; }
+        public string Url { get; set; }
+        public bool IsActive { get; set; }
+        [JsonIgnore]
+        public bool IsLoad { get; set; }
+        [JsonIgnore]
+        public Type PageType { get; set; }
+    }
+
+    async public Task InitRouteTabs()
+    {
+        var openedTabJson = await JS.InvokeAsync<string>("adminBlazorJS.getStorage", "adminBlazorOpenedTabs");
+        if (string.IsNullOrWhiteSpace(openedTabJson)) openedTabJson = "[]";
+        var openedTabs = JsonConvert.DeserializeObject<List<OpenedTabInfo>>(openedTabJson);
+        OpenedTabs.AddRange(openedTabs);
+    }
+    async public Task OpenTab(string key, string title, string url)
+    {
+        OpenedTabs.ForEach(a => a.IsActive = false);
+        var tab = OpenedTabs.FirstOrDefault(a => a.Key == key);
+        if (tab == null) OpenedTabs.Add(tab = new OpenedTabInfo { Key = key, Title = title, Url = url });
+        var tt = typeof(AdminBlazor.Pages.Dict);
+        var uri = Nav.ToAbsoluteUri(tab.Url);
+        tab.PageType = AdminBlazorOptions.Assemblies.Select(a => 
+            a.GetTypes().FirstOrDefault(b => typeof(ComponentBase).IsAssignableFrom(b) && 
+            b.GetCustomAttribute<RouteAttribute>()?.Template == uri.AbsolutePath)).FirstOrDefault(a => a != null);
+        tab.IsLoad = true;
+        tab.IsActive = true;
+        await JS.InvokeVoidAsync("adminBlazorJS.setStorage", "adminBlazorOpenedTabs", JsonConvert.SerializeObject(OpenedTabs));
+    }
+    #endregion
+
+    #region Modal
+    public List<AdminModal> Modals { get; set; }
+    async public Task RenderModal()
+    {
+        await JS.InvokeVoidAsync("adminBlazorJS.modalRender", null);
+    }
+    #endregion
+
     #region AuthPath/AuthButton From Database
     //async public Task<bool> AuthPath(string path)
     //{
@@ -254,101 +302,101 @@ public class AdminContext
 
     #region 租户
     async internal Task<List<MenuEntity>> GenerateTenantMenus(string tenantId, bool isAdministrator = false)
+{
+    var main = cloud.Use("main");
+    var tenantMenuIds = isAdministrator ? null : await main.Select<TenantMenuEntity>().Where(a => a.TenantId == tenantId).ToListAsync(a => a.MenuId);
+    var allMenus = (await main.Select<MenuEntity>().ToListAsync()).ToAdminItemList(main);
+    var menus = new List<MenuEntity>();
+    var sysMenus = new[] { "admin/user", "admin/role" };
+    var level = 0;
+    for (var a = 0; a < allMenus.Count; a++)
     {
-        var main = cloud.Use("main");
-        var tenantMenuIds = isAdministrator ? null : await main.Select<TenantMenuEntity>().Where(a => a.TenantId == tenantId).ToListAsync(a => a.MenuId);
-        var allMenus = (await main.Select<MenuEntity>().ToListAsync()).ToAdminItemList(main);
-        var menus = new List<MenuEntity>();
-        var sysMenus = new[] { "admin/user", "admin/role" };
-        var level = 0;
-        for (var a = 0; a < allMenus.Count; a++)
+        if (allMenus[a].Level == 1 && allMenus[a].Value.Label == "系统管理")
         {
-            if (allMenus[a].Level == 1 && allMenus[a].Value.Label == "系统管理")
+            menus.Add(allMenus[a].Value);
+            a++;
+            for (; a < allMenus.Count && allMenus[a].Level > 1; a++)
             {
-                menus.Add(allMenus[a].Value);
-                a++;
-                for (; a < allMenus.Count && allMenus[a].Level > 1; a++)
+                if (sysMenus.Contains(allMenus[a].Value.PathLower))
                 {
-                    if (sysMenus.Contains(allMenus[a].Value.PathLower))
-                    {
+                    if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
+                        menus.Add(allMenus[a].Value);
+                    level = allMenus[a].Level;
+                    a++;
+                    for (; a < allMenus.Count && allMenus[a].Level > level; a++)
                         if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
                             menus.Add(allMenus[a].Value);
-                        level = allMenus[a].Level;
-                        a++;
-                        for (; a < allMenus.Count && allMenus[a].Level > level; a++)
-                            if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
-                                menus.Add(allMenus[a].Value);
-                        a--;
-                    }
+                    a--;
                 }
-                a--;
-                continue;
             }
-            if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
-                menus.Add(allMenus[a].Value);
-            //level = allMenus[a].Level;
-            //a++;
-            //for (; a < allMenus.Count && allMenus[a].Level > level; a++)
-            //    if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
-            //        menus.Add(allMenus[a].Value);
-            //a--;
+            a--;
+            continue;
         }
-        return menus;
+        if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
+            menus.Add(allMenus[a].Value);
+        //level = allMenus[a].Level;
+        //a++;
+        //for (; a < allMenus.Count && allMenus[a].Level > level; a++)
+        //    if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
+        //        menus.Add(allMenus[a].Value);
+        //a--;
     }
-    public IFreeSql GetTenantFreeSql(string tenantId)
+    return menus;
+}
+public IFreeSql GetTenantFreeSql(string tenantId)
+{
+    cloud.Register(tenantId, () =>
     {
-        cloud.Register(tenantId, () =>
-        {
-            var database = cloud.Use("main").Select<TenantEntity>().Where(a => a.Id == tenantId).First(a => a.Database);
-            if (database == null) throw new Exception("租户数据库错误");
-            var fsql = new FreeSqlBuilder()
-                .UseConnectionString(database.DataType, database.ConenctionString.Replace("{database}", tenantId))
-                .UseAdoConnectionPool(true)
-                .UseAutoSyncStructure(true)
-                .Build();
-            AdminContext.ConfigFreeSql(fsql);
-            return fsql;
-        });
-        return cloud.Use(tenantId);
-    }
-    internal static void ConfigFreeSql(IFreeSql fsql)
+        var database = cloud.Use("main").Select<TenantEntity>().Where(a => a.Id == tenantId).First(a => a.Database);
+        if (database == null) throw new Exception("租户数据库错误");
+        var fsql = new FreeSqlBuilder()
+            .UseConnectionString(database.DataType, database.ConenctionString.Replace("{database}", tenantId))
+            .UseAdoConnectionPool(true)
+            .UseAutoSyncStructure(true)
+            .Build();
+        AdminContext.ConfigFreeSql(fsql);
+        return fsql;
+    });
+    return cloud.Use(tenantId);
+}
+internal static void ConfigFreeSql(IFreeSql fsql)
+{
+    var serverTime = fsql.Ado.QuerySingle(() => DateTime.UtcNow);
+    var timeOffset = DateTime.UtcNow.Subtract(serverTime);
+    fsql.Aop.AuditValue += (_, e) =>
     {
-        var serverTime = fsql.Ado.QuerySingle(() => DateTime.UtcNow);
-        var timeOffset = DateTime.UtcNow.Subtract(serverTime);
-        fsql.Aop.AuditValue += (_, e) =>
+        if (e.Column.Table.Type == typeof(TenantEntity) && e.Column.CsName == nameof(TenantEntity.Id))
         {
-            if (e.Column.Table.Type == typeof(TenantEntity) && e.Column.CsName == nameof(TenantEntity.Id))
-            {
-                e.Value = e.Column.Table.ColumnsByCs[nameof(TenantEntity.Id)].GetValue(e.Object).ConvertTo<string>()?.ToLower();
-                return;
-            }
-            if (e.Column.CsName == nameof(MenuEntity.PathLower) && typeof(MenuEntity).IsAssignableFrom(e.Column.Table.Type))
-            {
-                var path = e.Column.Table.ColumnsByCs[nameof(MenuEntity.Path)].GetValue(e.Object).ConvertTo<string>()?.Trim('/');
-                e.Column.Table.ColumnsByCs[nameof(MenuEntity.Path)].SetValue(e.Object, path);
-                e.Value = path?.ToLower();
-                return;
-            }
+            e.Value = e.Column.Table.ColumnsByCs[nameof(TenantEntity.Id)].GetValue(e.Object).ConvertTo<string>()?.ToLower();
+            return;
+        }
+        if (e.Column.CsName == nameof(MenuEntity.PathLower) && typeof(MenuEntity).IsAssignableFrom(e.Column.Table.Type))
+        {
+            var path = e.Column.Table.ColumnsByCs[nameof(MenuEntity.Path)].GetValue(e.Object).ConvertTo<string>()?.Trim('/');
+            e.Column.Table.ColumnsByCs[nameof(MenuEntity.Path)].SetValue(e.Object, path);
+            e.Value = path?.ToLower();
+            return;
+        }
 
-            //数据库时间
-            if ((e.Column.CsType == typeof(DateTime) || e.Column.CsType == typeof(DateTime?))
-                && e.Column.Attribute.ServerTime != DateTimeKind.Unspecified
-                && (e.Value == null || (DateTime)e.Value == default || (DateTime?)e.Value == default))
-            {
-                e.Value = (e.Column.Attribute.ServerTime == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now).Subtract(timeOffset);
-                return;
-            }
+        //数据库时间
+        if ((e.Column.CsType == typeof(DateTime) || e.Column.CsType == typeof(DateTime?))
+            && e.Column.Attribute.ServerTime != DateTimeKind.Unspecified
+            && (e.Value == null || (DateTime)e.Value == default || (DateTime?)e.Value == default))
+        {
+            e.Value = (e.Column.Attribute.ServerTime == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now).Subtract(timeOffset);
+            return;
+        }
 
-            //雪花Id
-            if (e.Column.CsType == typeof(long)
-                && e.Property.GetCustomAttribute<SnowflakeAttribute>(false) != null
-                && (e.Value == null || (long)e.Value == default || (long?)e.Value == default))
-            {
-                e.Value = YitIdHelper.NextId();
-                return;
-            }
-        };
-    }
-    #endregion
+        //雪花Id
+        if (e.Column.CsType == typeof(long)
+            && e.Property.GetCustomAttribute<SnowflakeAttribute>(false) != null
+            && (e.Value == null || (long)e.Value == default || (long?)e.Value == default))
+        {
+            e.Value = YitIdHelper.NextId();
+            return;
+        }
+    };
+}
+#endregion
 
 }

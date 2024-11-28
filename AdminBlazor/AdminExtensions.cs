@@ -24,9 +24,11 @@ public class AdminBlazorOptions
 
 public static class AdminExtensions
 {
+    internal static AdminBlazorOptions Options { get; private set; }
     public static IServiceCollection AddAdminBlazor(this IServiceCollection services, AdminBlazorOptions options)
     {
         if (options == null) options = new AdminBlazorOptions();
+        Options = options;
         AdminBlazorOptions.Global_GeneartorKey = options.GeneartorKey;
         AdminBlazorOptions.Global_GeneartorServer = options.GeneartorServer.TrimEnd('/');
         if (options.Assemblies == null) options.Assemblies = new[] { typeof(AdminExtensions).Assembly };

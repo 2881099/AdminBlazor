@@ -26,7 +26,7 @@
                         @item.Type
                         @if (item.Type == MenuEntityType.增删改查)
                         {
-                            <button @onclick="e => BeginDesignCrud(item)" type="button" data-bs-toggle="modal" data-target="#roleList_editModal" class="ml-2 btn btn-light btn-xs"><i class="fa fa-user-secret"></i>配置</button>
+                            <button @onclick="e => BeginDesignCrud(item)" type="button" class="ml-2 btn btn-light btn-xs"><i class="fa fa-user-secret"></i>配置</button>
                         }
                     </td>
                     <td>@item.Path</td>

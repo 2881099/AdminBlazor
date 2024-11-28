@@ -26,7 +26,7 @@
                                 @if (isActive && currentQuery.IsNull() == false)
                                 {
                                     @* QueryString 分页之后，再点菜单强制刷新。否则只是 url 变化，页面上无法通知状态 *@
-                                    <a @onclick="e => nav.NavigateTo(menu2.Path, true)" class="nav-link active" href="@menu2.Path">
+                                    <a @onclick="e => OpenTab(menu2)" class="nav-link active" href="@menu2.Path">
                                         <i class="far @menu2.Icon.IsNull("fa-circle") nav-icon"></i>
                                         <p>@menu2.Label</p>
                                     </a>
@@ -34,7 +34,7 @@
                                 else
                                 {
                                     @* NavLink 不支持匹配 QueryString *@
-                                    <a class="nav-link @(isActive ? "active" : "")" href="@menu2.Path">
+                                    <a @onclick="e => OpenTab(menu2)" class="nav-link @(isActive ? "active" : "")" href="@menu2.Path">
                                         <i class="far @menu2.Icon.IsNull("fa-circle") nav-icon"></i>
                                         <p>@menu2.Label</p>
                                     </a>
@@ -53,6 +53,11 @@
     List<MenuEntity> menus;
     string currentPath;
     string currentQuery;
+
+    async Task OpenTab(MenuEntity menu)
+    {
+        await admin.OpenTab(menu.Id.ToString(), menu.Label, menu.Path);
+    }
 
     protected override void OnAfterRender(bool firstRender)
     {

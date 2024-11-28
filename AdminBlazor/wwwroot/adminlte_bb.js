@@ -27,24 +27,42 @@ var adminBlazorJS = {
         else
             bd.removeClass('sidebar-collapse').addClass('sidebar-open')
     },
-    modalShow: function (id, dotnetRef) {
+    dotnetRefs: {},
+    modalInit: function (containerRef) {
+        adminBlazorJS.dotnetRefs.modalContainer = containerRef
+    },
+    modalRender: function (id, modalRef) {
+        adminBlazorJS.dotnetRefs.modalContainer.invokeMethodAsync('Render', id)
+        if (modalRef) adminBlazorJS.dotnetRefs[id] = modalRef
+    },
+    modalShow: function (id) {
         var ele = $('#' + id);
         ele.modal('show');
+        if (!ele.find('modal-dialog').hasClass('modal-fullscreen') && !ele.find('modal-dialog').hasClass('modal-xxl')) {
+            ele.draggable({ cursor: 'move', handle: '.modal-header' });
+            $('#' + id + '.modal.draggable>.modal-dialog>.modal-content>.modal-header').css('cursor', 'move');
+        }
         ele.on('hidden.bs.modal', e => {
             if (id != e.target.id) return
-            dotnetRef.invokeMethodAsync('ModalOnClose')
-        })
+            adminBlazorJS.dotnetRefs[id].invokeMethodAsync('ModalOnClose')
+        });
     },
     setCookie: function (name, value, expireDays) {
-        var cookie = decodeURIComponent(name) + "=" + decodeURIComponent(value);
+        var cookie = decodeURIComponent(name) + "=" + decodeURIComponent(value)
         if (expireDays > 0) {
             var d = new Date();
-            d.setTime(d.getTime() + (expireDays * 24 * 60 * 60 * 1000));
-            cookie += ";expires=" + d.toUTCString();
+            d.setTime(d.getTime() + (expireDays * 24 * 60 * 60 * 1000))
+            cookie += ";expires=" + d.toUTCString()
         }
-        cookie += ";path=/";
-        document.cookie = cookie;
-    }
+        cookie += ";path=/"
+        document.cookie = cookie
+    },
+    getStorage: function (name) {
+        return localStorage.getItem(name)
+    },
+    setStorage: function (name, value) {
+        localStorage.setItem(name, value)
+    },
 };
 $(document.body).ready(function () {
     if (window.innerWidth < 500) {
@@ -62,4 +80,4 @@ $(document.body).ready(function () {
     }
 })
 
-document.write('<scr' + 'ipt src="_content/BootstrapBlazor/js/bootstrap.blazor.bundle.min.js"><' + '/scr' + 'ipt>');
+document.write('<scr' + 'ipt src="_content/BootstrapBlazor/js/bootstrap.blazor.bundle.min.js"><' + '/scr' + 'ipt>')

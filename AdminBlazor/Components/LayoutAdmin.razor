@@ -4,6 +4,7 @@
 @using AdminBlazor.Infrastructure.Encrypt
 @using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.Http.Extensions
+@using Newtonsoft.Json
 
 <div class="app-wrapper">
     <nav class="app-header navbar navbar-expand bg-body">
@@ -80,22 +81,33 @@
         <div class="app-content">
             @if (admin.AuthPathSuccess)
             {
-                <DockViewV2 Name="DockViewV2LayoutRow" class="dockview-content">
+                <DockViewV2 Name="DockViewV2LayoutRow" class="dockview-content" Renderer="DockViewRenderMode.Always">
                     <DockViewContent Type="DockViewContentType.Row">
                         <DockViewContent Type="DockViewContentType.Group">
-                            <DockViewComponent Key="tab1" Title="标签一" ShowClose="true" Width="14">
-                                @Body
-                            </DockViewComponent>
-                            <DockViewComponent Key="tab2" Title="标签二" ShowClose="true" Width="14">
-                                @Body
-                            </DockViewComponent>
+                            @foreach (var tab in admin.OpenedTabs)
+                            {
+                                <DockViewComponent Key="@tab.Key" Title="@tab.Title" ShowClose="true">
+                                    @if (tab.IsLoad)
+                                    {
+                                        @if (tab.PageType == null)
+                                        {
+                                            <Alert ShowBar="true" ShowBorder="true" Color="Color.Danger">
+                                                <div>@tab.Url 路由页面不存在！</div>
+                                            </Alert>
+                                        }
+                                        else
+                                        {
+                                            <DynamicComponent Type="tab.PageType" />
+                                        }
+                                    }
+                                </DockViewComponent>
+                            }
                         </DockViewContent>
                     </DockViewContent>
                 </DockViewV2>
             }
         </div>
     </main>
-
 
     @* <footer class="app-footer">
         <div class="float-end d-none d-sm-inline"></div>
@@ -106,6 +118,7 @@
         All rights reserved.
     </footer> *@
 </div>
+<AdminModalContainer />
 
 @code {
     [Inject] AdminContext admin { get; set; }
@@ -131,6 +144,7 @@
                 return;
             }
         }
+        await admin.InitRouteTabs();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

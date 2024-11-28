@@ -1,6 +1,6 @@
 ﻿@namespace BootstrapBlazor.Components
 
-<AdminModal Visible="Menu != null" ClientId="roleList_editModal" DialogClassName="modal-xl" Title="@($"【增删改查-配置】{Menu?.Label}")" OnClose="OnClose">
+<AdminModal Visible="Menu != null" DialogClassName="modal-xl" Title="@($"【增删改查-配置】{Menu?.Label}")" OnClose="OnClose">
     @if (Menu != null)
     {
         <div class="card card-light card-tabs">
@@ -70,7 +70,7 @@
                             <li class="nav-item"><a @onclick="e => tabindex = 3" class="nav-link @(tabindex == 3 ? "active" : "")" style="cursor:pointer">多对多</a></li>
                         }
                     </ul>
-            </div>
+                </div>
             }
             
             <div class="card-body">

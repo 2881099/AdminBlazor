@@ -1,41 +1,42 @@
 ﻿@namespace BootstrapBlazor.Components
 
-@foreach (var modal in Modals)
+@if (admin.CascadeModals != null)
 {
-    <div class="modal fade draggable " id="@modal.ClientId" data-bs-backdrop="@(modal.IsBackdropStatic ? "static" : "true")" data-bs-keyboard="@(modal.IsKeyboard ? "true" : "false")" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog @modal.DialogClassName modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div class="modal-title">@modal.Title</div>
-                    <button type="button" class="close" aria-label="Close" @onclick="modal.Hide">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    @if (modal.Visible)
+    foreach (var modal in admin.CascadeModals)
+    {
+        <div class="modal fade draggable " id="@modal.ClientId" data-bs-backdrop="@(modal.IsBackdropStatic ? "static" : "true")" data-bs-keyboard="@(modal.IsKeyboard ? "true" : "false")" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog @modal.DialogClassName modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="modal-title">@modal.Title</div>
+                        <button type="button" class="close" aria-label="Close" @onclick="modal.Hide">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        @if (modal.Visible)
+                        {
+                            @modal.ChildContent
+                        }
+                    </div>
+                    @if (modal.OnYes.HasDelegate)
                     {
-                        @modal.ChildContent
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="modal.Hide">@modal.CloseButton</button>
+                            <button type="button" class="btn btn-primary" @onclick="modal.YesClick">@modal.YesButton</button>
+                        </div>
                     }
                 </div>
-                @if (modal.OnYes.HasDelegate)
-                {
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="modal.Hide">@modal.CloseButton</button>
-                        <button type="button" class="btn btn-primary" @onclick="modal.YesClick">@modal.YesButton</button>
-                    </div>
-                }
             </div>
         </div>
-    </div>
+    }
 }
 
 @code {
-    [Inject] AdminContext admin { get; set; }
-    [Parameter] public List<AdminModal> Modals { get; set; } = new();
+    [CascadingParameter] AdminContext admin { get; set; }
 
     async protected override Task OnInitializedAsync()
     {
-        admin.Modals = Modals;
         await JS.InvokeVoidAsync("adminBlazorJS.modalInit", DotNetObjectReference.Create(this));
     }
 
@@ -50,7 +51,7 @@
     async protected override Task OnAfterRenderAsync(bool firstRender)
     {
         if (!string.IsNullOrWhiteSpace(_clientId)) {
-            var modal = Modals.FirstOrDefault(a => a.ClientId == _clientId);
+            var modal = admin.CascadeModals.FirstOrDefault(a => a.ClientId == _clientId);
             if (modal != null)
                 await JS.InvokeVoidAsync("adminBlazorJS.modalShow", $"{modal.ClientId}");
             _clientId = null;

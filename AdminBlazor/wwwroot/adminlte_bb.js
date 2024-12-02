@@ -35,8 +35,16 @@ var adminBlazorJS = {
         adminBlazorJS.dotnetRefs.modalContainer.invokeMethodAsync('Render', id)
         if (modalRef) adminBlazorJS.dotnetRefs[id] = modalRef
     },
-    modalShow: function (id) {
+    modalShow: function (id, modalRef, tryTimes) {
         var ele = $('#' + id);
+        if (ele.length == 0) {
+            if (tryTimes > 100) {
+                alert('Modal not found!');
+                return;
+            }
+            setTimeout(function () { adminBlazorJS.modalShow(id, modalRef, tryTimes + 1) }, 100);
+            return;
+        }
         ele.modal('show');
         if (!ele.find('modal-dialog').hasClass('modal-fullscreen') && !ele.find('modal-dialog').hasClass('modal-xxl')) {
             ele.draggable({ cursor: 'move', handle: '.modal-header' });
@@ -44,8 +52,9 @@ var adminBlazorJS = {
         }
         ele.on('hidden.bs.modal', e => {
             if (id != e.target.id) return
-            adminBlazorJS.dotnetRefs[id].invokeMethodAsync('ModalOnClose')
-        });
+            modalRef.invokeMethodAsync('ModalOnClose')
+            delete adminBlazorJS.dotnetRefs[id]
+        })
     },
     setCookie: function (name, value, expireDays) {
         var cookie = decodeURIComponent(name) + "=" + decodeURIComponent(value)

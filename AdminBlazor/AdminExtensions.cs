@@ -5,9 +5,11 @@ using FreeSql.Aop;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
+using Newtonsoft.Json.Linq;
 using System.Reflection;
 using System.Web;
 using Yitter.IdGenerator;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 public class AdminBlazorOptions
 {
@@ -136,6 +138,13 @@ public static class AdminExtensions
         };
         services.AddSingleton(r => cloud);
         services.AddScoped<AdminContext>();
+        services.AddCascadingValue(sp =>
+        {
+            var admin = sp.GetService<AdminContext>();
+            var source = new CascadingValueSource<AdminContext>(admin, isFixed: false);
+            admin.CascadeSource = source;
+            return source;
+        });
         services.AddScoped(fsqlFactory);
         services.AddScoped<UnitOfWorkManager>();
         services.AddScoped(r => new RepositoryOptions

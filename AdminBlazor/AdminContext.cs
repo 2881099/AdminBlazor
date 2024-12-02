@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Reflection;
 using Yitter.IdGenerator;
 
@@ -17,10 +19,10 @@ public class AdminContext
     public HttpContext HttpContext { get; }
     NavigationManager Nav;
     IJSRuntime JS;
-    FreeSqlCloud cloud;
+    FreeSqlCloud Cloud;
     public AdminContext(FreeSqlCloud cloud, IHttpContextAccessor httpContextAccessor, NavigationManager nav, IJSRuntime js)
     {
-        this.cloud = cloud;
+        this.Cloud = cloud;
         this.HttpContext = httpContextAccessor.HttpContext;
         this.Service = HttpContext.RequestServices;
         this.Nav = nav;
@@ -35,8 +37,8 @@ public class AdminContext
         {
             if (_orm != null) return _orm;
             var tenantHost = HttpContext.Request.Host.Host.ToLower();
-            Tenant = cloud.Use("main").Select<TenantEntity>().Where(a => a.Host == tenantHost && a.IsEnabled).First();
-            if (Tenant == null) return _orm = cloud.Use("main");
+            Tenant = Cloud.Use("main").Select<TenantEntity>().Where(a => a.Host == tenantHost && a.IsEnabled).First();
+            if (Tenant == null) return _orm = Cloud.Use("main");
             return _orm = GetTenantFreeSql(Tenant.Id);
         }
     }
@@ -60,7 +62,9 @@ public class AdminContext
                 return;
             }
         }
+        await InitCascade();
     }
+
     #region SignIn/Out
     internal string RandToken = Guid.NewGuid().ToString("n");
     async public Task SignIn(UserEntity user, bool remember)
@@ -69,7 +73,7 @@ public class AdminContext
         await Orm.Update<UserEntity>().Where(a => a.Id == user.Id).Set(a => a.LoginTime, user.LoginTime).ExecuteAffrowsAsync();
 
         if (HttpContext.WebSockets.IsWebSocketRequest)
-            await JS.InvokeVoidAsync("adminBlazorJS.setCookie", "login", 
+            await JS.InvokeVoidAsync("adminBlazorJS.setCookie", "login",
                 DesEncrypt.Encrypt(user.Id.ToString() + "|" + user.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")),
                 remember ? 15 : -1);
         else
@@ -82,9 +86,9 @@ public class AdminContext
     }
     async public Task SignOut()
     {
-        if (HttpContext.WebSockets.IsWebSocketRequest) 
+        if (HttpContext.WebSockets.IsWebSocketRequest)
             await JS.InvokeVoidAsync("adminBlazorJS.setCookie", "login", "");
-        else 
+        else
             HttpContext.Response.Cookies.Delete("login");
         await Task.Yield();
     }
@@ -216,51 +220,6 @@ public class AdminContext
         }
     }
 
-    #region 多页标签
-    public List<OpenedTabInfo> OpenedTabs { get; set; } = new(50);
-    public class OpenedTabInfo
-    {
-        public string Key { get; set; }
-        public string Title { get; set; }
-        public string Url { get; set; }
-        public bool IsActive { get; set; }
-        [JsonIgnore]
-        public bool IsLoad { get; set; }
-        [JsonIgnore]
-        public Type PageType { get; set; }
-    }
-
-    async public Task InitRouteTabs()
-    {
-        var openedTabJson = await JS.InvokeAsync<string>("adminBlazorJS.getStorage", "adminBlazorOpenedTabs");
-        if (string.IsNullOrWhiteSpace(openedTabJson)) openedTabJson = "[]";
-        var openedTabs = JsonConvert.DeserializeObject<List<OpenedTabInfo>>(openedTabJson);
-        OpenedTabs.AddRange(openedTabs);
-    }
-    async public Task OpenTab(string key, string title, string url)
-    {
-        OpenedTabs.ForEach(a => a.IsActive = false);
-        var tab = OpenedTabs.FirstOrDefault(a => a.Key == key);
-        if (tab == null) OpenedTabs.Add(tab = new OpenedTabInfo { Key = key, Title = title, Url = url });
-        var tt = typeof(AdminBlazor.Pages.Dict);
-        var uri = Nav.ToAbsoluteUri(tab.Url);
-        tab.PageType = AdminBlazorOptions.Assemblies.Select(a => 
-            a.GetTypes().FirstOrDefault(b => typeof(ComponentBase).IsAssignableFrom(b) && 
-            b.GetCustomAttribute<RouteAttribute>()?.Template == uri.AbsolutePath)).FirstOrDefault(a => a != null);
-        tab.IsLoad = true;
-        tab.IsActive = true;
-        await JS.InvokeVoidAsync("adminBlazorJS.setStorage", "adminBlazorOpenedTabs", JsonConvert.SerializeObject(OpenedTabs));
-    }
-    #endregion
-
-    #region Modal
-    public List<AdminModal> Modals { get; set; }
-    async public Task RenderModal()
-    {
-        await JS.InvokeVoidAsync("adminBlazorJS.modalRender", null);
-    }
-    #endregion
-
     #region AuthPath/AuthButton From Database
     //async public Task<bool> AuthPath(string path)
     //{
@@ -302,101 +261,162 @@ public class AdminContext
 
     #region 租户
     async internal Task<List<MenuEntity>> GenerateTenantMenus(string tenantId, bool isAdministrator = false)
-{
-    var main = cloud.Use("main");
-    var tenantMenuIds = isAdministrator ? null : await main.Select<TenantMenuEntity>().Where(a => a.TenantId == tenantId).ToListAsync(a => a.MenuId);
-    var allMenus = (await main.Select<MenuEntity>().ToListAsync()).ToAdminItemList(main);
-    var menus = new List<MenuEntity>();
-    var sysMenus = new[] { "admin/user", "admin/role" };
-    var level = 0;
-    for (var a = 0; a < allMenus.Count; a++)
     {
-        if (allMenus[a].Level == 1 && allMenus[a].Value.Label == "系统管理")
+        var main = Cloud.Use("main");
+        var tenantMenuIds = isAdministrator ? null : await main.Select<TenantMenuEntity>().Where(a => a.TenantId == tenantId).ToListAsync(a => a.MenuId);
+        var allMenus = (await main.Select<MenuEntity>().ToListAsync()).ToAdminItemList(main);
+        var menus = new List<MenuEntity>();
+        var sysMenus = new[] { "admin/user", "admin/role" };
+        var level = 0;
+        for (var a = 0; a < allMenus.Count; a++)
         {
-            menus.Add(allMenus[a].Value);
-            a++;
-            for (; a < allMenus.Count && allMenus[a].Level > 1; a++)
+            if (allMenus[a].Level == 1 && allMenus[a].Value.Label == "系统管理")
             {
-                if (sysMenus.Contains(allMenus[a].Value.PathLower))
+                menus.Add(allMenus[a].Value);
+                a++;
+                for (; a < allMenus.Count && allMenus[a].Level > 1; a++)
                 {
-                    if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
-                        menus.Add(allMenus[a].Value);
-                    level = allMenus[a].Level;
-                    a++;
-                    for (; a < allMenus.Count && allMenus[a].Level > level; a++)
+                    if (sysMenus.Contains(allMenus[a].Value.PathLower))
+                    {
                         if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
                             menus.Add(allMenus[a].Value);
-                    a--;
+                        level = allMenus[a].Level;
+                        a++;
+                        for (; a < allMenus.Count && allMenus[a].Level > level; a++)
+                            if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
+                                menus.Add(allMenus[a].Value);
+                        a--;
+                    }
                 }
+                a--;
+                continue;
             }
-            a--;
-            continue;
+            if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
+                menus.Add(allMenus[a].Value);
+            //level = allMenus[a].Level;
+            //a++;
+            //for (; a < allMenus.Count && allMenus[a].Level > level; a++)
+            //    if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
+            //        menus.Add(allMenus[a].Value);
+            //a--;
         }
-        if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
-            menus.Add(allMenus[a].Value);
-        //level = allMenus[a].Level;
-        //a++;
-        //for (; a < allMenus.Count && allMenus[a].Level > level; a++)
-        //    if (isAdministrator || tenantMenuIds.Contains(allMenus[a].Value.Id))
-        //        menus.Add(allMenus[a].Value);
-        //a--;
+        return menus;
     }
-    return menus;
-}
-public IFreeSql GetTenantFreeSql(string tenantId)
-{
-    cloud.Register(tenantId, () =>
+    public IFreeSql GetTenantFreeSql(string tenantId)
     {
-        var database = cloud.Use("main").Select<TenantEntity>().Where(a => a.Id == tenantId).First(a => a.Database);
-        if (database == null) throw new Exception("租户数据库错误");
-        var fsql = new FreeSqlBuilder()
-            .UseConnectionString(database.DataType, database.ConenctionString.Replace("{database}", tenantId))
-            .UseAdoConnectionPool(true)
-            .UseAutoSyncStructure(true)
-            .Build();
-        AdminContext.ConfigFreeSql(fsql);
-        return fsql;
-    });
-    return cloud.Use(tenantId);
-}
-internal static void ConfigFreeSql(IFreeSql fsql)
-{
-    var serverTime = fsql.Ado.QuerySingle(() => DateTime.UtcNow);
-    var timeOffset = DateTime.UtcNow.Subtract(serverTime);
-    fsql.Aop.AuditValue += (_, e) =>
+        Cloud.Register(tenantId, () =>
+        {
+            var database = Cloud.Use("main").Select<TenantEntity>().Where(a => a.Id == tenantId).First(a => a.Database);
+            if (database == null) throw new Exception("租户数据库错误");
+            var fsql = new FreeSqlBuilder()
+                .UseConnectionString(database.DataType, database.ConenctionString.Replace("{database}", tenantId))
+                .UseAdoConnectionPool(true)
+                .UseAutoSyncStructure(true)
+                .Build();
+            AdminContext.ConfigFreeSql(fsql);
+            return fsql;
+        });
+        return Cloud.Use(tenantId);
+    }
+    internal static void ConfigFreeSql(IFreeSql fsql)
     {
-        if (e.Column.Table.Type == typeof(TenantEntity) && e.Column.CsName == nameof(TenantEntity.Id))
+        var serverTime = fsql.Ado.QuerySingle(() => DateTime.UtcNow);
+        var timeOffset = DateTime.UtcNow.Subtract(serverTime);
+        fsql.Aop.AuditValue += (_, e) =>
         {
-            e.Value = e.Column.Table.ColumnsByCs[nameof(TenantEntity.Id)].GetValue(e.Object).ConvertTo<string>()?.ToLower();
-            return;
-        }
-        if (e.Column.CsName == nameof(MenuEntity.PathLower) && typeof(MenuEntity).IsAssignableFrom(e.Column.Table.Type))
-        {
-            var path = e.Column.Table.ColumnsByCs[nameof(MenuEntity.Path)].GetValue(e.Object).ConvertTo<string>()?.Trim('/');
-            e.Column.Table.ColumnsByCs[nameof(MenuEntity.Path)].SetValue(e.Object, path);
-            e.Value = path?.ToLower();
-            return;
-        }
+            if (e.Column.Table.Type == typeof(TenantEntity) && e.Column.CsName == nameof(TenantEntity.Id))
+            {
+                e.Value = e.Column.Table.ColumnsByCs[nameof(TenantEntity.Id)].GetValue(e.Object).ConvertTo<string>()?.ToLower();
+                return;
+            }
+            if (e.Column.CsName == nameof(MenuEntity.PathLower) && typeof(MenuEntity).IsAssignableFrom(e.Column.Table.Type))
+            {
+                var path = e.Column.Table.ColumnsByCs[nameof(MenuEntity.Path)].GetValue(e.Object).ConvertTo<string>()?.Trim('/');
+                e.Column.Table.ColumnsByCs[nameof(MenuEntity.Path)].SetValue(e.Object, path);
+                e.Value = path?.ToLower();
+                return;
+            }
 
-        //数据库时间
-        if ((e.Column.CsType == typeof(DateTime) || e.Column.CsType == typeof(DateTime?))
-            && e.Column.Attribute.ServerTime != DateTimeKind.Unspecified
-            && (e.Value == null || (DateTime)e.Value == default || (DateTime?)e.Value == default))
-        {
-            e.Value = (e.Column.Attribute.ServerTime == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now).Subtract(timeOffset);
-            return;
-        }
+            //数据库时间
+            if ((e.Column.CsType == typeof(DateTime) || e.Column.CsType == typeof(DateTime?))
+                && e.Column.Attribute.ServerTime != DateTimeKind.Unspecified
+                && (e.Value == null || (DateTime)e.Value == default || (DateTime?)e.Value == default))
+            {
+                e.Value = (e.Column.Attribute.ServerTime == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now).Subtract(timeOffset);
+                return;
+            }
 
-        //雪花Id
-        if (e.Column.CsType == typeof(long)
-            && e.Property.GetCustomAttribute<SnowflakeAttribute>(false) != null
-            && (e.Value == null || (long)e.Value == default || (long?)e.Value == default))
-        {
-            e.Value = YitIdHelper.NextId();
-            return;
-        }
-    };
-}
-#endregion
+            //雪花Id
+            if (e.Column.CsType == typeof(long)
+                && e.Property.GetCustomAttribute<SnowflakeAttribute>(false) != null
+                && (e.Value == null || (long)e.Value == default || (long?)e.Value == default))
+            {
+                e.Value = YitIdHelper.NextId();
+                return;
+            }
+        };
+    }
+    #endregion
 
+    #region CascadeValue Tabs/Modals
+    internal CascadingValueSource<AdminContext> CascadeSource{ get; set; }
+    internal List<CascadeTabInfo> CascadeTabs { get; } = new(50);
+    internal List<AdminModal> CascadeModals { get; } = new(20);
+    public class CascadeTabInfo
+    {
+        public string Key { get; set; }
+        public string Title { get; set; }
+        public string Url { get; set; }
+        public bool IsActive { get; set; }
+        [JsonIgnore]
+        public bool IsLoad { get; set; }
+        [JsonIgnore]
+        public Type PageType { get; set; }
+    }
+    async public Task InitCascade()
+    {
+        var openedTabJson = await JS.InvokeAsync<string>("adminBlazorJS.getStorage", "adminBlazorOpenedTabs");
+        if (string.IsNullOrWhiteSpace(openedTabJson)) openedTabJson = "[]";
+        CascadeTabs.AddRange(JsonConvert.DeserializeObject<CascadeTabInfo[]>(openedTabJson));
+    }
+    async public Task OpenTab(string key, string title, string url)
+    {
+        CascadeTabs.ForEach(a => a.IsActive = false);
+        var tab = CascadeTabs.FirstOrDefault(a => a.Key == key);
+        if (tab == null) CascadeTabs.Add(tab = new CascadeTabInfo { Key = key, Title = title, Url = url });
+        var tt = typeof(AdminBlazor.Pages.Dict);
+        var uri = Nav.ToAbsoluteUri(tab.Url);
+        tab.PageType = AdminBlazorOptions.Assemblies.Select(a =>
+            a.GetTypes().FirstOrDefault(b => typeof(ComponentBase).IsAssignableFrom(b) &&
+            b.GetCustomAttribute<RouteAttribute>()?.Template == uri.AbsolutePath)).FirstOrDefault(a => a != null);
+        tab.IsLoad = true;
+        tab.IsActive = true;
+        await JS.InvokeVoidAsync("adminBlazorJS.setStorage", "adminBlazorOpenedTabs", JsonConvert.SerializeObject(CascadeTabs));
+        await CascadeSource.NotifyChangedAsync();
+    }
+    async public Task CloseTab(string key)
+    {
+        var index = CascadeTabs.FindIndex(a => a.Key == key);
+        if (index == -1) return;
+        var tab = CascadeTabs[index];
+        if (tab.IsActive)
+        {
+            tab.IsActive = false;
+            if (index == CascadeTabs.Count - 1) CascadeTabs[index - 1].IsActive = true;
+            else CascadeTabs[index + 1].IsActive = true;
+        }
+        CascadeTabs.RemoveAt(index);
+        await CascadeSource.NotifyChangedAsync();
+    }
+    async public Task OpenModal(AdminModal modal)
+    {
+        CascadeModals.Add(modal);
+        await CascadeSource.NotifyChangedAsync();
+    }
+    async public Task CloseModal(AdminModal modal)
+    {
+        CascadeModals.Remove(modal);
+        await CascadeSource.NotifyChangedAsync();
+    }
+    #endregion
 }

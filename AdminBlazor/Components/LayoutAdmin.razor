@@ -84,7 +84,7 @@
                 <DockViewV2 Name="DockViewV2LayoutRow" class="dockview-content" Renderer="DockViewRenderMode.Always">
                     <DockViewContent Type="DockViewContentType.Row">
                         <DockViewContent Type="DockViewContentType.Group">
-                            @foreach (var tab in admin.OpenedTabs)
+                            @foreach (var tab in admin.CascadeTabs)
                             {
                                 <DockViewComponent Key="@tab.Key" Title="@tab.Title" ShowClose="true">
                                     @if (tab.IsLoad)
@@ -121,7 +121,7 @@
 <AdminModalContainer />
 
 @code {
-    [Inject] AdminContext admin { get; set; }
+    [CascadingParameter] AdminContext admin { get; set; }
 
     async Task LogoutClick()
     {
@@ -144,7 +144,6 @@
                 return;
             }
         }
-        await admin.InitRouteTabs();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

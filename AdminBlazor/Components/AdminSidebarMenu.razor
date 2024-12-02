@@ -49,7 +49,7 @@
 </nav>
 
 @code {
-    [CascadingParameter, Inject] AdminContext admin { get; set; }
+    [Inject] AdminContext admin { get; set; }
     List<MenuEntity> menus;
     string currentPath;
     string currentQuery;

@@ -6,15 +6,30 @@
     [Parameter] public bool IsBackdropStatic { get; set; } = true;
     [Parameter] public bool IsKeyboard { get; set; } = true;
     [Inject] AdminContext admin { get; set; }
+    bool isNotifyChanged = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!isNotifyChanged) {
+            isNotifyChanged = true;
+            await admin.CascadeSource.NotifyChangedAsync();
+        }
+        else
+        {
+            isNotifyChanged = false;
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
 
     async Task Show()
     {
-        admin.Modals.Add(this);
-        await JS.InvokeVoidAsync("adminBlazorJS.modalRender", ClientId, DotNetObjectReference.Create(this));
+        await admin.OpenModal(this);
+        await JS.InvokeVoidAsync("adminBlazorJS.modalShow", ClientId, DotNetObjectReference.Create(this));
     }
     [JSInvokable]
     async public Task ModalOnClose()
     {
+        await admin.CloseModal(this);
         if (OnClose.HasDelegate) await OnClose.InvokeAsync();
     }
     async internal Task Hide()

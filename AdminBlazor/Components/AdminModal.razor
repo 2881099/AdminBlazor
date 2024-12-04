@@ -6,18 +6,11 @@
     [Parameter] public bool IsBackdropStatic { get; set; } = true;
     [Parameter] public bool IsKeyboard { get; set; } = true;
     [Inject] AdminContext admin { get; set; }
-    bool isNotifyChanged = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!isNotifyChanged) {
-            isNotifyChanged = true;
-            await admin.CascadeSource.NotifyChangedAsync();
-        }
-        else
-        {
-            isNotifyChanged = false;
-        }
+        if (firstRender) return;
+        if (_visible) await admin.CascadeSource.NotifyChangedAsync();
         await base.OnAfterRenderAsync(firstRender);
     }
 
@@ -52,10 +45,11 @@
         {
             if (_visible != value)
             {
+                _visible = value;
                 if (value) this.InvokeAsync(Show);
                 else this.InvokeAsync(Hide);
+                return;
             }
-            _visible = value;
         }
     }
 

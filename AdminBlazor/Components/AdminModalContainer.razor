@@ -50,6 +50,7 @@
 
     async protected override Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender) return;
         if (!string.IsNullOrWhiteSpace(_clientId)) {
             var modal = admin.CascadeModals.FirstOrDefault(a => a.ClientId == _clientId);
             if (modal != null)

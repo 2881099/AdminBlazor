@@ -78,7 +78,7 @@
                 </div>
             </div>
         </div> *@
-        <div id="app-dockview" class="app-content">
+        <div id="app-dockview" class="app-content dockview-theme-light">
             
         </div>
     </main>
@@ -97,8 +97,7 @@
 {
     foreach (var tab in admin.CascadeTabs)
     {
-        <div Key="@tab.Key" id="dockview-panel-@tab.Key">
-            @DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+        <div @key="tab.Key" id="dockview-panel-@tab.Key">
             @if (tab.IsLoad)
             {
                 @if (tab.PageType == null)

@@ -382,7 +382,7 @@ public class AdminContext
     async public Task OpenTab(string key, string title, string url)
     {
         var oldtab = CascadeTabs.FirstOrDefault(a => a.IsActive);
-        oldtab.IsActive = false;
+        if (oldtab != null) oldtab.IsActive = false;
         var newtab = CascadeTabs.FirstOrDefault(a => a.Key == key);
         if (newtab == null) CascadeTabs.Add(newtab = new CascadeTabInfo { Key = key, Title = title, Url = url });
         var tt = typeof(AdminBlazor.Pages.Dict);
@@ -392,7 +392,7 @@ public class AdminContext
             b.GetCustomAttribute<RouteAttribute>()?.Template == uri.AbsolutePath)).FirstOrDefault(a => a != null);
         newtab.IsLoad = true;
         newtab.IsActive = true;
-        await JS.InvokeVoidAsync("adminBlazorJS.dockViewRender", JsonConvert.SerializeObject(CascadeTabs), oldtab.Key, newtab.Key);
+        await JS.InvokeVoidAsync("adminBlazorJS.dockViewRender", JsonConvert.SerializeObject(CascadeTabs), newtab.Key, newtab.Title + newtab.Key, true);
         await CascadeSource.NotifyChangedAsync();
     }
     async public Task CloseTab(string key)
@@ -408,8 +408,8 @@ public class AdminContext
             else newtab = CascadeTabs[oldtabIndex + 1];
         }
         CascadeTabs.RemoveAt(oldtabIndex);
-        if (oldtab != null) oldtab.IsActive = true;
-        await JS.InvokeVoidAsync("adminBlazorJS.dockViewRender", JsonConvert.SerializeObject(CascadeTabs), oldtab?.Key, newtab.Key);
+        if (newtab != null) newtab.IsActive = true;
+        await JS.InvokeVoidAsync("adminBlazorJS.dockViewRender", JsonConvert.SerializeObject(CascadeTabs), newtab.Key, true);
         await CascadeSource.NotifyChangedAsync();
     }
     async public Task OpenModal(AdminModal modal)

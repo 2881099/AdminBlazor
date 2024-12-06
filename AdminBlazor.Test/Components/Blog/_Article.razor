@@ -224,6 +224,7 @@
 
     async Task<bool> OnSaving(AdminConfirmEventArgs<Article> e)
     {
+        var item = e.Argument;
         //检查必须录入
         if (string.IsNullOrWhiteSpace(e.Argument.Content))
         {

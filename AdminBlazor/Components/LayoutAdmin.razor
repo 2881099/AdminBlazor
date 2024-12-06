@@ -78,34 +78,8 @@
                 </div>
             </div>
         </div> *@
-        <div class="app-content">
-            @if (admin.AuthPathSuccess)
-            {
-                <DockViewV2 Name="DockViewV2LayoutRow" class="dockview-content" Renderer="DockViewRenderMode.Always">
-                    <DockViewContent Type="DockViewContentType.Row">
-                        <DockViewContent Type="DockViewContentType.Group">
-                            @foreach (var tab in admin.CascadeTabs)
-                            {
-                                <DockViewComponent Key="@tab.Key" Title="@tab.Title" ShowClose="true">
-                                    @if (tab.IsLoad)
-                                    {
-                                        @if (tab.PageType == null)
-                                        {
-                                            <Alert ShowBar="true" ShowBorder="true" Color="Color.Danger">
-                                                <div>@tab.Url 路由页面不存在！</div>
-                                            </Alert>
-                                        }
-                                        else
-                                        {
-                                            <DynamicComponent Type="tab.PageType" />
-                                        }
-                                    }
-                                </DockViewComponent>
-                            }
-                        </DockViewContent>
-                    </DockViewContent>
-                </DockViewV2>
-            }
+        <div id="app-dockview" class="app-content">
+            
         </div>
     </main>
 
@@ -118,7 +92,58 @@
         All rights reserved.
     </footer> *@
 </div>
-<AdminModalContainer />
+
+@if (admin.AuthPathSuccess)
+{
+    foreach (var tab in admin.CascadeTabs)
+    {
+        <div Key="@tab.Key" id="dockview-panel-@tab.Key">
+            @DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+            @if (tab.IsLoad)
+            {
+                @if (tab.PageType == null)
+                {
+                    <Alert ShowBar="true" ShowBorder="true" Color="Color.Danger">
+                        <div>@tab.Url 路由页面不存在！</div>
+                    </Alert>
+                }
+                else
+                {
+                    <DynamicComponent Type="tab.PageType" />
+                }
+            }
+        </div>
+    }
+}
+
+@foreach (var modal in admin.CascadeModals)
+{
+    <div class="modal fade draggable " id="@modal.ClientId" data-bs-backdrop="@(modal.IsBackdropStatic ? "static" : "true")" data-bs-keyboard="@(modal.IsKeyboard ? "true" : "false")" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog @modal.DialogClassName modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">@modal.Title</div>
+                    <button type="button" class="close" aria-label="Close" @onclick="modal.Hide">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (modal.Visible)
+                    {
+                        @modal.ChildContent
+                    }
+                </div>
+                @if (modal.OnYes.HasDelegate)
+                {
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="modal.Hide">@modal.CloseButton</button>
+                        <button type="button" class="btn btn-primary" @onclick="modal.YesClick">@modal.YesButton</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     [CascadingParameter] AdminContext admin { get; set; }

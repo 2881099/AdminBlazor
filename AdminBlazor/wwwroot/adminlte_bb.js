@@ -40,9 +40,10 @@ var adminBlazorJS = {
     dotnetRefs: {},
     dockView: null,
     dockViewComponents: {},
-    dockViewInit: function () {
+    dockViewInit: function (dockViewRef) {
+        adminBlazorJS.dockViewRef = dockViewRef
         var tabs = adminBlazorJS.getStorage('adminBlazorOpenedTabs')
-        adminBlazorJS.dockViewInitLazy(tabs, 0);
+        adminBlazorJS.dockViewInitLazy(tabs, 0)
         return tabs;
     },
     dockViewInitLazy: function (json, tryTimes) {
@@ -61,23 +62,37 @@ var adminBlazorJS = {
             createComponent: function (options) {
                 return adminBlazorJS.dockViewComponents[options.name]
             },
-            renderer: 'always',
+            defaultRenderer: 'always',
         })
         var tabs = null;
         try { tabs = JSON.parse(json) } catch (e) { tabs = [] }
         if (tabs == null) tabs = [];
         var tabIndex = 0;
         var render = function () {
-            adminBlazorJS.dockViewRender(null, tabs[tabIndex].Key, tabs[tabIndex].Title + tabs[tabIndex].Key, tabIndex == 0, 0, function () {
+            if (tabIndex >= tabs.length) return;
+            adminBlazorJS.dockViewOpenTab(null, tabs[tabIndex].Key, tabs[tabIndex].Title, tabIndex == 0, 0, function () {
                 tabIndex++;
-                if (tabIndex >= tabs.length) return;
+                if (tabIndex >= tabs.length) {
+                    adminBlazorJS.dockView.onDidActivePanelChange(function (e) {
+                        adminBlazorJS.dockViewRef.invokeMethodAsync('ActiveTab', e.id)
+                    })
+                    adminBlazorJS.dockView.onDidRemovePanel(function (e) {
+                        adminBlazorJS.dockViewRef.invokeMethodAsync('CloseTab', e.id)
+                    })
+                    for (var a = 0; a < tabs.length; a++) if (tabs[a].IsActive) {
+                        adminBlazorJS.dockViewRef.invokeMethodAsync('ActiveTab', tabs[a].Key)
+                        break;
+                    }
+                    return;
+                }
                 render();
             });
         };
         render(tabIndex)
     },
-    dockViewRender: function (json, key, title, inactive, tryTimes, callback) {
+    dockViewOpenTab: function (json, key, title, inactive, tryTimes, callback) {
         if (json) adminBlazorJS.setStorage('adminBlazorOpenedTabs', json)
+        if (!key) return callback ? callback(true) : null;
         if (adminBlazorJS.dockViewComponents['panel-' + key] == null) {
             if ($('#dockview-panel-' + key)[0] == null) {
                 if (tryTimes > 100) {
@@ -86,7 +101,7 @@ var adminBlazorJS = {
                 }
                 if (tryTimes == null || tryTimes == undefined) tryTimes = 0;
                 setTimeout(function () {
-                    adminBlazorJS.dockViewRender(null, key, title, inactive, tryTimes + 1, callback);
+                    adminBlazorJS.dockViewOpenTab(null, key, title, inactive, tryTimes + 1, callback);
                 }, 100);
                 return;
             }
@@ -102,8 +117,9 @@ var adminBlazorJS = {
                 id: key,
                 title: title,
                 component: 'panel-' + key,
-                inactive: inactive
+                //inactive: inactive,
             })
+            //adminBlazorJS.dockView.getPanel(key).api.onDidActiveChange = function () { console.log(1122) }
         }
         if (callback) callback(findPanel);
         //adminBlazorJS.dockView.groups[0].part.tabsContainer.tabs[0].value._element.className = 'tab inactive-tab';

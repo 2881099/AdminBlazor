@@ -54,7 +54,7 @@
 .app-main .app-content .dockview-content .card .card-footer {
     border:none;
 }
-.app-main .app-content .bb-dockview .bb-dockview-panel {
+.app-main .app-content .dv-dockview .dv-content-container {
     overflow-y:auto;
 }
 

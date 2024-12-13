@@ -417,7 +417,7 @@ public class AdminContext
     {
         var tab = CascadeTabs.FirstOrDefault(a => a.Key == key);
         if (tab == null) return;
-        OpenTab(tab.Key, tab.Title, tab.Url);
+        Nav.NavigateTo(tab.Url, false, false);
     }
     [JSInvokable]
     public void OpenTab(string key, string title, string url)

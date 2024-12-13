@@ -383,7 +383,16 @@ public class AdminContext
         {
             var uri = Nav.ToAbsoluteUri(e.TargetLocation);
             var newtab = CascadeTabs.FirstOrDefault(a => Nav.ToAbsoluteUri(a.Url).AbsolutePath == uri.AbsolutePath);
-            if (newtab == null) return;
+            if (newtab == null)
+            {
+                var findMenu = RoleMenus.Find(a => Nav.ToAbsoluteUri(a.Path).AbsolutePath == uri.AbsolutePath);
+                if (findMenu == null)
+                {
+                    await JS.Error("找不到资源");
+                    return;
+                }
+                CascadeTabs.Add(newtab = new CascadeTabInfo { Key = findMenu.Id.ToString(), Title = findMenu.Label, Url = findMenu.Path });
+            }
             var oldtab = CascadeTabs.FirstOrDefault(a => a.IsActive);
             if (oldtab != null)
             {

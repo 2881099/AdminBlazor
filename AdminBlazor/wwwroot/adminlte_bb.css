@@ -19,43 +19,41 @@
     padding:0px;
     font-size:12px;
 }
-.app-main .app-content .dockview-content {
+.app-main .app-content {
     border:none;
 }
-.app-main .app-content .dockview-content .dv-render-overlay {
+.app-main .app-content .dv-render-overlay {
     padding:0;
     margin:0;
+    overflow-y:auto;
 }
-.app-main .app-content .dockview-content .content-container {
+.app-main .app-content .content-container {
     padding: 0;
     margin: 0;
 }
-.app-main .app-content .dockview-content .container-fluid {
+.app-main .app-content .container-fluid {
     padding: 0px 0 0 0;
     margin: 0;
 }
-.app-main .app-content .dockview-content .container-fluid .col-12 {
+.app-main .app-content .container-fluid .col-12 {
     padding: 0px 0 0 0;
     margin: 0;
 }
-.app-main .app-content .dockview-content .card {
+.app-main .app-content .card {
     --bs-card-border-radius: 0;
     padding-top:12px;
     background-color:white;
     border:none;
     box-shadow: none;
 }
-.app-main .app-content .dockview-content .card .card-header {
+.app-main .app-content .card .card-header {
     background-color:white;
 }
-.app-main .app-content .dockview-content .card .card-header:first-child .row {
-    padding-left:6px;
+.app-main .app-content .card .card-header:first-child .row {
+    padding-left: 6px;
 }
-.app-main .app-content .dockview-content .card .card-footer {
-    border:none;
-}
-.app-main .app-content .dv-dockview .dv-content-container {
-    overflow-y:auto;
+.app-main .app-content .card .card-footer {
+    border: none;
 }
 
 .dropdown-logout .logout-avatar {

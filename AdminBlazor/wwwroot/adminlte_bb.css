@@ -27,6 +27,19 @@
     margin:0;
     overflow-y:auto;
 }
+.app-main .app-content .dv-tab .dv-default-tab .dv-default-tab-action {
+    padding: 2px;
+}
+.app-main .app-content .dv-tab .dv-default-tab .dv-default-tab-action svg {
+    width:10px;
+    height:10px;
+}
+.app-main .app-content .dv-tabs-and-actions-container .dv-tabs-container .dv-tab {
+    min-width:35px;
+}
+.app-main .app-content .dv-tab .dv-default-tab {
+    min-width:40px;
+}
 .app-main .app-content .content-container {
     padding: 0;
     margin: 0;

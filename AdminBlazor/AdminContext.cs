@@ -372,6 +372,8 @@ public class AdminContext
         [JsonIgnore]
         public bool IsLoad { get; set; }
         [JsonIgnore]
+        public bool IsClosed { get; set; }
+        [JsonIgnore]
         public Type PageType { get; set; }
     }
     async public Task InitCascade()
@@ -407,7 +409,7 @@ public class AdminContext
             {
                 newtab.IsLoad = true;
                 newtab.IsActive = true;
-                await JS.InvokeVoidAsync("adminBlazorJS.dockViewOpenTab", JsonConvert.SerializeObject(CascadeTabs), newtab.Key, newtab.Title, true);
+                await JS.InvokeVoidAsync("adminBlazorJS.dockViewOpenTab", JsonConvert.SerializeObject(CascadeTabs.Where(a => !a.IsClosed)), newtab.Key, newtab.Title, true);
                 await CascadeSource.NotifyChangedAsync();
             }
         });
@@ -424,14 +426,18 @@ public class AdminContext
     {
         var newtab = CascadeTabs.FirstOrDefault(a => a.Key == key);
         if (newtab == null) CascadeTabs.Add(newtab = new CascadeTabInfo { Key = key, Title = title, Url = url });
+        else newtab.IsClosed = false;
         Nav.NavigateTo(newtab.Url, false, false);
     }
     [JSInvokable]
-    public void CloseTab(string key)
+    async public Task CloseTab(string key)
     {
         var oldtabIndex = CascadeTabs.FindIndex(a => a.Key == key);
         if (oldtabIndex == -1) return;
         var oldtab = CascadeTabs[oldtabIndex];
+        oldtab.PageType = null;
+        oldtab.IsLoad = false;
+        oldtab.IsClosed = true;
         CascadeTabInfo newtab = null;
         if (oldtab.IsActive)
         {
@@ -441,9 +447,12 @@ public class AdminContext
             newtab.IsActive = true;
         }
         else
+        {
             newtab = CascadeTabs.FirstOrDefault(a => a.IsActive);
-        CascadeTabs.RemoveAt(oldtabIndex);
-        Nav.NavigateTo(newtab.Url, false, false);
+            await JS.InvokeVoidAsync("adminBlazorJS.dockViewOpenTab", JsonConvert.SerializeObject(CascadeTabs.Where(a => !a.IsClosed)));
+        }
+        //CascadeTabs.RemoveAt(oldtabIndex);
+        //Nav.NavigateTo(newtab.Url, false, false);
     }
     async public Task OpenModal(AdminModal modal)
     {

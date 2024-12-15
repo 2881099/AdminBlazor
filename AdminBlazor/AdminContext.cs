@@ -393,8 +393,10 @@ public class AdminContext
                     await JS.Error("找不到资源");
                     return;
                 }
-                CascadeTabs.Add(newtab = new CascadeTabInfo { Key = findMenu.Id.ToString(), Title = findMenu.Label, Url = findMenu.Path });
+                CascadeTabs.Add(newtab = new CascadeTabInfo { Key = findMenu.Id.ToString(), Title = findMenu.Label, Url = uri.PathAndQuery });
             }
+            else
+                newtab.Url = uri.PathAndQuery;
             var oldtab = CascadeTabs.FirstOrDefault(a => a.IsActive);
             if (oldtab != null)
             {
@@ -409,9 +411,9 @@ public class AdminContext
             {
                 newtab.IsLoad = true;
                 newtab.IsActive = true;
-                await JS.InvokeVoidAsync("adminBlazorJS.dockViewOpenTab", JsonConvert.SerializeObject(CascadeTabs.Where(a => !a.IsClosed)), newtab.Key, newtab.Title, true);
                 await CascadeSource.NotifyChangedAsync();
             }
+            await JS.InvokeVoidAsync("adminBlazorJS.dockViewOpenTab", JsonConvert.SerializeObject(CascadeTabs.Where(a => !a.IsClosed)), newtab.Key, newtab.Title, true);
         });
     }
     [JSInvokable]
